@@ -1,66 +1,65 @@
-# 🛠️ Server Management & Automation Scripts
+# 🛠️ Bash Scripts
 
-A collection of professional Bash scripts designed to streamline the deployment and management of self-hosted services, digital infrastructure, and web portfolios.
+A professional collection of Bash scripts tailored for managing self-hosted infrastructure, Docker environments, and automated deployments.
 
-## 🚀 Scripts Included
+## 🚀 Featured Scripts
 
-### 1. Docker Business Card & Portfolio Manager (`manage_docker.sh`)
-This script automates the deployment of static Nginx containers for digital business cards and personal portfolios. It handles directory creation, port mapping, and `docker-compose.yml` updates without overwriting existing services.
+### 1. Docker Portfolio & Business Card Manager (`createPortfolioBizcard.sh`)
+This script simplifies the process of hosting multiple static websites on a single server. It is specifically designed to work with static site generators to deploy digital business cards and personal portfolios quickly.
 
 **Key Features:**
-* **Dual Mode:** Choose between deploying a "Business Card Only" or a "Business Card + Website" stack.
-* **Non-Destructive:** Uses `sed` to inject new services into your existing `docker-compose.yml` while maintaining proper indentation and spacing.
-* **Automated Directory Setup:** Creates `${name}Biz` and `${name}Website` folders automatically.
-* **Smart Networking:** Detects and adds external networks (like Cloudflare tunnels) only if they aren't already defined.
+* **Intelligent Injection:** Adds new services to your existing `docker-compose.yml` without overwriting previous configurations.
+* **Automatic Directory Creation:** Generates the necessary host folders (`${name}Biz` and `${name}Website`) automatically to prevent Nginx 403 errors.
+* **Flexible Deployment:** Supports two modes:
+    1. **Business Card Only**: Deploys a single Nginx service.
+    2. **Business Card + Website**: Deploys two linked Nginx services for a complete personal brand.
+* **Network Integration:** Seamlessly attaches containers to existing external networks (e.g., `cloudflare` or `proxy-net`).
+* **Clean Formatting:** Ensures the generated YAML is human-readable with proper spacing and indentation.
 
 ---
 
-## 📋 How to Use
+## 📋 Getting Started
 
 ### Prerequisites
-* A Linux environment (Ubuntu/Debian recommended).
+* A Linux-based server (Ubuntu/Debian recommended).
 * **Docker** and **Docker Compose** installed.
-* A tool to generate your static site files. I highly recommend using [EnBizCard](https://enbizcard.vishnuraghav.com/) to create your professional digital business cards.
+* Static web assets. For high-quality digital business cards, use [EnBizCard](https://enbizcard.vishnuraghav.com/).
 
-### Setup Instructions
+### Installation & Usage
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-    cd your-repo-name
-    ```
-
-2.  **Make the script executable:**
-    ```bash
-    chmod +x manage_docker.sh
-    ```
-
-3.  **Run the script:**
-    ```bash
-    ./manage_docker.sh
-    ```
-
-4.  **Follow the prompts:**
-    * Enter the project name (e.g., `adib`).
-    * Select the project type.
-    * Assign unique ports.
-    * Specify your Docker network (e.g., `proxy-net` or `cloudflare`).
-
-5.  **Deploy:**
-    The script will create the folders. Place your `index.html` and assets inside the newly created directories, then run:
-    ```bash
-    docker compose up -d
-    ```
-
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/Bme-Adib/Bash-Scripts.git](https://github.com/Bme-Adib/Bash-Scripts.git)
+   cd Bash-Scripts
+   ```
+2. **Grant execution permissions:**
+   ```bash
+   chmod +x createPortfolioBizcard.sh
+   ```
+3. **Execute the script:**
+```bash
+   ./createPortfolioBizcard.sh
+```
+4. **Follow the interactive prompts:**
+   Provide a project name (this becomes your container and folder name).
+    - Choose your deployment type.
+    - Enter unique host ports.
+    - Define your external network if applicable.
+5. **Deploy the stack:**
+Once the script finishes, move your HTML files into the newly created directories and run:
+```bash
+docker compose up -d
+```
 ---
 
 ## 🎨 Recommended Workflow
-1.  **Generate:** Create a stunning, responsive business card using [enbizcard.vishnuraghav.com](https://enbizcard.vishnuraghav.com/).
-2.  **Automate:** Run `manage_docker.sh` to prepare your server environment.
-3.  **Upload:** Move your generated files into the `${name}Biz` folder.
-4.  **Connect:** Point your Cloudflare Tunnel or Reverse Proxy to the container name and port.
+1. **Design:** Generate your digital card at [enbizcard.vishnuraghav.com](https://enbizcard.vishnuraghav.com/).
+2. **Setup:** Run `createPortfolioBizcard.sh` to prepare the server structure.
+3. **Transfer:** Upload your assets to the `${name}Biz` directory.
+4. **Proxy:** Configure your Cloudflare Tunnel or Reverse Proxy to point to the container name and assigned port.
 
 ---
 
 ## 👤 Author
-**Adib (Abdulmutalib)** Digital Infrastructure & Open Source Enthusiast.
+**Adib**  
+Digital Infrastructure & Automation Specialist
