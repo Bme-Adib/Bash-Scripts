@@ -29,7 +29,7 @@ This script simplifies the process of hosting multiple static websites on a sing
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/Bme-Adib/Bash-Scripts.git](https://github.com/Bme-Adib/Bash-Scripts.git)
+   git clone https://github.com/Bme-Adib/Bash-Scripts.git
    cd Bash-Scripts
    ```
 2. **Grant execution permissions:**
