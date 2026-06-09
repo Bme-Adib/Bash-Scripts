@@ -1,87 +1,275 @@
 #!/bin/bash
 
-# 1. Gather Project Information
-read -p "Enter project name (e.g., adib): " NAME
-echo "Choose project type:"
-echo "1) Business Card Only"
-echo "2) Business Card + Website"
-read -p "Selection [1-2]: " TYPE
+# Exit immediately if a command exits with a non-zero status
+# Treat unset variables as an error
+# Prevent errors in a pipeline from being masked
+set -euo pipefail
 
-# 2. Gather Ports and Network
-read -p "Enter port for ${NAME}-biz: " BIZ_PORT
-if [ "$TYPE" == "2" ]; then
-    read -p "Enter port for ${NAME}-website: " WEB_PORT
+# --- Color Codes for UX ---
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# --- Cleanup Helper ---
+# No global temp blocks needed anymore since we write the file directly
+
+# --- Helper Functions ---
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+
+validate_port() {
+    local port="$1"
+    local desc="$2"
+    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+        log_error "Invalid port number for $desc: '$port'. Must be between 1 and 65535."
+        return 1
+    fi
+    return 0
+}
+
+create_placeholder_html() {
+    local dir="$1"
+    local title="$2"
+    cat <<EOF > "${dir}/index.html"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #f8fafc;
+            text-align: center;
+        }
+        .container {
+            padding: 2rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 { margin-top: 0; color: #38bdf8; }
+        p { color: #94a3b8; }
+        .credit {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .credit a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+        .credit a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>${title} Ready!</h1>
+        <p>This is a placeholder page served from Nginx inside Docker.</p>
+        <div class="credit">
+            Bash Script By Adib Builds (<a href="https://github.com/Bme-Adib" target="_blank">https://github.com/Bme-Adib</a>)
+        </div>
+    </div>
+</body>
+</html>
+EOF
+}
+
+# --- 1. Gather & Sanitize Project Information ---
+echo -e "${GREEN}============================================================${NC}"
+echo -e "${GREEN}  Bash Script By Adib Builds (https://github.com/Bme-Adib)  ${NC}"
+echo -e "${GREEN}============================================================${NC}"
+echo -e "${BLUE}=== Docker Compose Project Creator ===${NC}\n"
+
+while true; do
+    read -p "Enter project name (e.g., adib): " RAW_NAME
+    # Convert to lowercase and strip invalid characters
+    NAME=$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_-]//g')
+    
+    if [ -z "$NAME" ]; then
+        log_error "Project name cannot be empty."
+    else
+        if [ "$RAW_NAME" != "$NAME" ]; then
+            log_warning "Sanitized name to '$NAME' for Docker compatibility."
+        fi
+        break
+    fi
+done
+
+# Parent project folder
+PROJECT_DIR="${NAME}"
+
+# --- Check if Project Folder / Config already exists ---
+if [ -d "$PROJECT_DIR" ] && [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
+    log_warning "Project directory '${PROJECT_DIR}' already contains a docker-compose.yml file."
+    read -p "Do you want to overwrite it? (y/N): " CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
+        log_info "Operation aborted."
+        exit 0
+    fi
 fi
+
+while true; do
+    echo -e "\nChoose project type:"
+    echo "1) Business Card Only"
+    echo "2) Website Only"
+    echo "3) Business Card + Website"
+    read -p "Selection [1-3]: " TYPE
+    if [ "$TYPE" = "1" ] || [ "$TYPE" = "2" ] || [ "$TYPE" = "3" ]; then
+        break
+    else
+        log_error "Invalid selection. Please choose 1, 2, or 3."
+    fi
+done
+
+# Check which services are requested
+HAS_BIZ=false
+HAS_WEB=false
+if [ "$TYPE" = "1" ] || [ "$TYPE" = "3" ]; then
+    HAS_BIZ=true
+fi
+if [ "$TYPE" = "2" ] || [ "$TYPE" = "3" ]; then
+    HAS_WEB=true
+fi
+
+# --- 2. Gather Ports and Network ---
+BIZ_PORT=""
+if [ "$HAS_BIZ" = true ]; then
+    while true; do
+        read -p "Enter port for ${NAME}-biz: " BIZ_PORT
+        if validate_port "$BIZ_PORT" "${NAME}-biz"; then
+            break
+        fi
+    done
+fi
+
+WEB_PORT=""
+if [ "$HAS_WEB" = true ]; then
+    while true; do
+        read -p "Enter port for ${NAME}-website: " WEB_PORT
+        if [ -n "$BIZ_PORT" ] && [ "$WEB_PORT" = "$BIZ_PORT" ]; then
+            log_error "Web port cannot be the same as business card port ($BIZ_PORT)!"
+            continue
+        fi
+        if validate_port "$WEB_PORT" "${NAME}-website"; then
+            break
+        fi
+    done
+fi
+
 read -p "Enter network name (leave empty for none): " NET_NAME
+# Trim whitespace from network name
+NET_NAME=$(echo "$NET_NAME" | xargs)
 
-# --- Create Folders ---
-echo "Creating project directories..."
-mkdir -p "${NAME}Biz"
-if [ "$TYPE" == "2" ]; then
-    mkdir -p "${NAME}Website"
+# --- Create Folders & Boilerplate HTML ---
+log_info "Creating project directories..."
+mkdir -p "$PROJECT_DIR"
+
+BIZ_DIR="${PROJECT_DIR}/biz"
+WEB_DIR="${PROJECT_DIR}/website"
+
+if [ "$HAS_BIZ" = true ]; then
+    mkdir -p "$BIZ_DIR"
+    create_placeholder_html "$BIZ_DIR" "Business Card: ${NAME}"
 fi
 
-# 3. Create a temporary file for the new service block
-TEMP_BLOCK=$(mktemp)
+if [ "$HAS_WEB" = true ]; then
+    mkdir -p "$WEB_DIR"
+    create_placeholder_html "$WEB_DIR" "Website: ${NAME}"
+fi
 
-# Added a blank line at the top for better formatting
-cat <<EOF > "$TEMP_BLOCK"
+# --- 3. Create docker-compose.yml ---
+log_info "Writing docker-compose.yml..."
+cat <<EOF > "${PROJECT_DIR}/docker-compose.yml"
+services:
+EOF
 
-  ${NAME}-biz:
+if [ "$HAS_BIZ" = true ]; then
+    cat <<EOF >> "${PROJECT_DIR}/docker-compose.yml"
+  biz:
     image: nginx:alpine
     container_name: ${NAME}-biz
     restart: unless-stopped
     ports:
-      - ${BIZ_PORT}:80
+      - "${BIZ_PORT}:80"
     volumes:
-      - ./${NAME}Biz:/usr/share/nginx/html
+      - ./biz:/usr/share/nginx/html
 EOF
-
-if [ -n "$NET_NAME" ]; then
-    echo "    networks:" >> "$TEMP_BLOCK"
-    echo "      - $NET_NAME" >> "$TEMP_BLOCK"
+    if [ -n "$NET_NAME" ]; then
+        cat <<EOF >> "${PROJECT_DIR}/docker-compose.yml"
+    networks:
+      - ${NET_NAME}
+EOF
+    fi
 fi
 
-if [ "$TYPE" == "2" ]; then
-    cat <<EOF >> "$TEMP_BLOCK"
-
-  ${NAME}-website:
+if [ "$HAS_WEB" = true ]; then
+    cat <<EOF >> "${PROJECT_DIR}/docker-compose.yml"
+  website:
     image: nginx:alpine
     container_name: ${NAME}-website
     restart: unless-stopped
     ports:
-      - ${WEB_PORT}:80
+      - "${WEB_PORT}:80"
     volumes:
-      - ./${NAME}Website:/usr/share/nginx/html
+      - ./website:/usr/share/nginx/html
 EOF
     if [ -n "$NET_NAME" ]; then
-        echo "    networks:" >> "$TEMP_BLOCK"
-        echo "      - $NET_NAME" >> "$TEMP_BLOCK"
+        cat <<EOF >> "${PROJECT_DIR}/docker-compose.yml"
+    networks:
+      - ${NET_NAME}
+EOF
     fi
 fi
 
-# 4. Create or Update docker-compose.yml
-if [ ! -f "docker-compose.yml" ]; then
-    echo "services:" > docker-compose.yml
-fi
-
-# Use sed to read the temp file into the compose file after 'services:'
-sed -i "/services:/r $TEMP_BLOCK" docker-compose.yml
-
-# Clean up temp file
-rm "$TEMP_BLOCK"
-
-# 5. Handle Global Network Section
 if [ -n "$NET_NAME" ]; then
-    if ! grep -q "^networks:" docker-compose.yml; then
-        echo -e "\nnetworks:\n  $NET_NAME:\n    external: true" >> docker-compose.yml
-    elif ! grep -q "  $NET_NAME:" docker-compose.yml; then
-        echo "  $NET_NAME:" >> docker-compose.yml
-        echo "    external: true" >> docker-compose.yml
+    cat <<EOF >> "${PROJECT_DIR}/docker-compose.yml"
+
+networks:
+  ${NET_NAME}:
+    external: true
+EOF
+fi
+
+log_success "Project directory '${PROJECT_DIR}' and configuration are ready!"
+
+# --- 4. Smart Editor Launch (Before execution) ---
+read -p "Would you like to open/review docker-compose.yml before running the services? (y/N): " OPEN_EDITOR
+if [[ "$OPEN_EDITOR" =~ ^[yY]$ ]]; then
+    # Use system EDITOR, fallback to nano, then vi
+    EDITOR_CMD="${EDITOR:-$(which nano 2>/dev/null || which vi 2>/dev/null || echo "")}"
+    if [ -n "$EDITOR_CMD" ]; then
+        $EDITOR_CMD "${PROJECT_DIR}/docker-compose.yml"
+    else
+        log_warning "No text editor found (nano/vi). Displaying file instead:"
+        cat "${PROJECT_DIR}/docker-compose.yml"
     fi
 fi
 
-echo "Done! Folders ready and docker-compose.yml updated with better spacing."
-echo "Run docker compose down && docker compose up -d"
-sleep 1
-nano docker-compose.yml
+# --- 5. Prompt to start services ---
+read -p "Do you want to start the services now with 'docker compose up -d'? (y/N): " START_SERVICES
+if [[ "$START_SERVICES" =~ ^[yY]$ ]]; then
+    log_info "Navigating to ${PROJECT_DIR} and starting containers..."
+    (cd "$PROJECT_DIR" && docker compose up -d)
+    log_success "Services started successfully!"
+fi
+
+echo -e "\nTo manage this project, run:"
+echo -e "${GREEN}cd ${PROJECT_DIR}${NC}"
+echo -e "To start: ${BLUE}docker compose up -d${NC}"
+echo -e "To stop:  ${BLUE}docker compose down${NC}"
