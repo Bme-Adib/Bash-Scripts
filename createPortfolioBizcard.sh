@@ -5,11 +5,23 @@
 # Prevent errors in a pipeline from being masked
 set -euo pipefail
 
+# --- Support for curl | bash installation ---
+# If standard input is a pipe (like curl | bash), read the rest of the script,
+# save it to a temporary file, and run it with input restored to the terminal.
+if [ ! -t 0 ]; then
+    _TEMP_SCRIPT=$(mktemp)
+    cat > "$_TEMP_SCRIPT"
+    bash "$_TEMP_SCRIPT" "$@" < /dev/tty
+    _EXIT_CODE=$?
+    rm -f "$_TEMP_SCRIPT"
+    exit "$_EXIT_CODE"
+fi
+
 # --- Color Codes for UX ---
-RED='\033;0;31m'
-GREEN='\033;0;32m'
-YELLOW='\033;0;33m'
-BLUE='\033;0;34m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # --- Cleanup Helper ---
@@ -97,7 +109,7 @@ echo -e "${GREEN}============================================================${N
 echo -e "${BLUE}=== Docker Compose Project Creator ===${NC}\n"
 
 while true; do
-    read -p "Enter project name (e.g., adib): " RAW_NAME < /dev/tty
+    read -p "Enter project name (e.g., adib): " RAW_NAME
     # Convert to lowercase and strip invalid characters
     NAME=$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_-]//g')
     
@@ -117,7 +129,7 @@ PROJECT_DIR="${NAME}"
 # --- Check if Project Folder / Config already exists ---
 if [ -d "$PROJECT_DIR" ] && [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
     log_warning "Project directory '${PROJECT_DIR}' already contains a docker-compose.yml file."
-    read -p "Do you want to overwrite it? (y/N): " CONFIRM < /dev/tty
+    read -p "Do you want to overwrite it? (y/N): " CONFIRM
     if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
         log_info "Operation aborted."
         exit 0
@@ -129,7 +141,7 @@ while true; do
     echo "1) Business Card Only"
     echo "2) Website Only"
     echo "3) Business Card + Website"
-    read -p "Selection [1-3]: " TYPE < /dev/tty
+    read -p "Selection [1-3]: " TYPE
     if [ "$TYPE" = "1" ] || [ "$TYPE" = "2" ] || [ "$TYPE" = "3" ]; then
         break
     else
@@ -151,7 +163,7 @@ fi
 BIZ_PORT=""
 if [ "$HAS_BIZ" = true ]; then
     while true; do
-        read -p "Enter port for ${NAME}-biz: " BIZ_PORT < /dev/tty
+        read -p "Enter port for ${NAME}-biz: " BIZ_PORT
         if validate_port "$BIZ_PORT" "${NAME}-biz"; then
             break
         fi
@@ -161,7 +173,7 @@ fi
 WEB_PORT=""
 if [ "$HAS_WEB" = true ]; then
     while true; do
-        read -p "Enter port for ${NAME}-website: " WEB_PORT < /dev/tty
+        read -p "Enter port for ${NAME}-website: " WEB_PORT
         if [ -n "$BIZ_PORT" ] && [ "$WEB_PORT" = "$BIZ_PORT" ]; then
             log_error "Web port cannot be the same as business card port ($BIZ_PORT)!"
             continue
@@ -172,7 +184,7 @@ if [ "$HAS_WEB" = true ]; then
     done
 fi
 
-read -p "Enter network name (leave empty for none): " NET_NAME < /dev/tty
+read -p "Enter network name (leave empty for none): " NET_NAME
 # Trim whitespace from network name
 NET_NAME=$(echo "$NET_NAME" | xargs)
 
@@ -249,7 +261,7 @@ fi
 log_success "Project directory '${PROJECT_DIR}' and configuration are ready!"
 
 # --- 4. Smart Editor Launch (Before execution) ---
-read -p "Would you like to open/review docker-compose.yml before running the services? (y/N): " OPEN_EDITOR < /dev/tty
+read -p "Would you like to open/review docker-compose.yml before running the services? (y/N): " OPEN_EDITOR
 if [[ "$OPEN_EDITOR" =~ ^[yY]$ ]]; then
     # Use system EDITOR, fallback to nano, then vi
     EDITOR_CMD="${EDITOR:-$(which nano 2>/dev/null || which vi 2>/dev/null || echo "")}"
@@ -262,7 +274,7 @@ if [[ "$OPEN_EDITOR" =~ ^[yY]$ ]]; then
 fi
 
 # --- 5. Prompt to start services ---
-read -p "Do you want to start the services now with 'docker compose up -d'? (y/N): " START_SERVICES < /dev/tty
+read -p "Do you want to start the services now with 'docker compose up -d'? (y/N): " START_SERVICES
 if [[ "$START_SERVICES" =~ ^[yY]$ ]]; then
     log_info "Navigating to ${PROJECT_DIR} and starting containers..."
     (cd "$PROJECT_DIR" && docker compose up -d)
