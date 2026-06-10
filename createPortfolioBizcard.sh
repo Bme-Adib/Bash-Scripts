@@ -5,18 +5,6 @@
 # Prevent errors in a pipeline from being masked
 set -euo pipefail
 
-# --- Support for curl | bash installation ---
-# If standard input is a pipe (like curl | bash), read the rest of the script,
-# save it to a temporary file, and run it with input restored to the terminal.
-if [ ! -t 0 ]; then
-    _TEMP_SCRIPT=$(mktemp)
-    cat > "$_TEMP_SCRIPT"
-    bash "$_TEMP_SCRIPT" "$@" < /dev/tty
-    _EXIT_CODE=$?
-    rm -f "$_TEMP_SCRIPT"
-    exit "$_EXIT_CODE"
-fi
-
 # --- Color Codes for UX ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
