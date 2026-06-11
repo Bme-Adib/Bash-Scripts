@@ -35,7 +35,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
 * 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
-* 📊 [Real-Time System Monitor (`monitor_system.sh`)](#system-monitor-setup)
+* 📊 [System Information & Real-Time Monitor (`system_monitor.sh`)](#system-monitor-setup)
 
 ---
 
@@ -284,25 +284,33 @@ chmod +x setup_docker_postgres_postgrest.sh
 ---
 
 <a id="system-monitor-setup"></a>
-## 📊 Real-Time System Monitor (`monitor_system.sh`)
+## 📊 System Information & Real-Time Monitor (`system_monitor.sh`)
 
 ### Description
-Launches a gorgeous, real-time command-line resource monitor (`btop`) showing active CPU core speeds, RAM components, disk partitions, and active processes. The script automatically detects your system configuration and native package manager (apt, dnf, pacman, snap) to install `btop` if it's missing, falling back to compile-free static musl release binaries if required.
+An interactive, menu-driven script that provides general system diagnostics (OS, Kernel, CPU model, RAM usage, storage, network interfaces, and public IP address), with the option to launch or install `btop`, a gorgeous real-time command-line resource monitor showing active CPU speeds, memory components, disk partitions, and running processes. The script automatically detects your system configuration and package manager (apt, dnf, pacman, snap) to install `btop` if it is missing, falling back to compile-free static musl release binaries if required.
 
 ### How to Use
 **One-Click Run (Recommended):**
 ```bash
-sudo bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/monitor_system.sh)"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/system_monitor.sh)"
 ```
 **Alternative (Manual Download):**
 ```bash
-chmod +x monitor_system.sh
-sudo ./monitor_system.sh
+chmod +x system_monitor.sh
+./system_monitor.sh
 ```
 
 ### Options & Inputs Inside the Script
-- **Automatic Setup**: Verifies presence of `btop`, auto-updates packages, downloads binaries if missing, and configures files.
-- **Diagnostics Dashboard**: Launches the monitor immediately upon successful validation or setup.
+* **Interactive Selection Menu**: Allows you to choose what to display:
+  * `1) Run All Diagnostics (Summary)`: Run all diagnostics at once.
+  * `2) Show General System & OS Info`
+  * `3) Show CPU & Processor Info`
+  * `4) Show Memory (RAM) Info`
+  * `5) Show Storage (Disk) Space`
+  * `6) Show Network Information`
+  * `7) Show Hardware Summary (Detailed)`: Sudo required.
+  * `8) Launch Real-Time Resource Monitor (btop)`: Automatically checks for or installs `btop` and runs it.
+  * `0) Exit Utility`
 
 ---
 
