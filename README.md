@@ -35,6 +35,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
 * 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
+* 📊 [Real-Time System Monitor (`monitor_system.sh`)](#system-monitor-setup)
 
 ---
 
@@ -279,6 +280,29 @@ chmod +x setup_docker_postgres_postgrest.sh
 * **Cloudflare Subdomain**: The subdomain (e.g., `api.example.com`) to route REST API traffic.
 * **Cloudflare Network**: Docker network name (default `proxy-net`). Offers to create if missing.
 * **Deploy Confirmation**: Reviews settings and launches both Postgres and PostgREST containers.
+
+---
+
+<a id="system-monitor-setup"></a>
+## 📊 Real-Time System Monitor (`monitor_system.sh`)
+
+### Description
+Launches a gorgeous, real-time command-line resource monitor (`btop`) showing active CPU core speeds, RAM components, disk partitions, and active processes. The script automatically detects your system configuration and native package manager (apt, dnf, pacman, snap) to install `btop` if it's missing, falling back to compile-free static musl release binaries if required.
+
+### How to Use
+**One-Click Run (Recommended):**
+```bash
+sudo bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/monitor_system.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x monitor_system.sh
+sudo ./monitor_system.sh
+```
+
+### Options & Inputs Inside the Script
+- **Automatic Setup**: Verifies presence of `btop`, auto-updates packages, downloads binaries if missing, and configures files.
+- **Diagnostics Dashboard**: Launches the monitor immediately upon successful validation or setup.
 
 ---
 
