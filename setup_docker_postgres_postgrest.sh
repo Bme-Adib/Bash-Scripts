@@ -15,11 +15,24 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 
+# --- Helper Functions ---
+validate_port() {
+    local port="$1"
+    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+        log_error "Invalid port number: '$port'. Must be between 1 and 65535."
+        return 1
+    fi
+    if command -v ss &>/dev/null && ss -tln | grep -q ":${port} "; then
+        log_warning "Port $port appears to be already in use on your host system!"
+    fi
+    return 0
+}
+
 # --- Header ---
 echo -e "${GREEN}============================================================${NC}"
 echo -e "${GREEN}  Bash Script By Adib Builds (https://github.com/Bme-Adib)  ${NC}"
 echo -e "${GREEN}============================================================${NC}"
-echo -e "${BLUE}=== FileBrowser Quantum Container Auto-Setup ===${NC}\n"
+echo -e "${BLUE}=== Postgres 16 Alpine & PostgREST Auto-Setup ===${NC}\n"
 
 # 1. System Dependency Checks
 log_info "Verifying system requirements..."
@@ -41,30 +54,67 @@ fi
 log_success "Docker & Docker Compose detected."
 
 # 2. Gather Configuration Settings
-echo -e "\n${BLUE}>>> Step 1: Configure Port Exposure${NC}"
-read -rp "Would you like to expose the FileBrowser port to the host system? (y/n) [n]: " EXPOSE_PORT
-EXPOSE_PORT=${EXPOSE_PORT:-n}
+echo -e "\n${BLUE}>>> Step 1: Database Settings${NC}"
+read -rp "Enter Database Name [app_db]: " DB_NAME
+DB_NAME=${DB_NAME:-app_db}
 
-PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
-    # Change the port number before the colon (8081) to whatever port you want.
+read -rp "Enter Database User [db_user]: " DB_USER
+DB_USER=${DB_USER:-db_user}
+
+RANDOM_PASS=$(tr -dc 'A-Za-z0-9' < /dev/urandom 2>/dev/null | head -c 16 || echo "pg_secure_password")
+read -rp "Enter Database Password [$RANDOM_PASS]: " DB_PASS
+DB_PASS=${DB_PASS:-$RANDOM_PASS}
+
+echo -e "\n${BLUE}>>> Step 2: Port Exposure${NC}"
+# Postgres Port
+read -rp "Expose PostgreSQL port (5432) to the host system? (y/n) [n]: " EXPOSE_PG
+EXPOSE_PG=${EXPOSE_PG:-n}
+PG_PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
+    # Change the port number before the colon (5432) to whatever port you want.
     # ports:
-    #   - 8081:80"
-HOST_PORT="N/A"
-if [[ "$EXPOSE_PORT" =~ ^[Yy]$ ]]; then
-    read -rp "Enter host port to bind FileBrowser to [8081]: " HOST_PORT
-    HOST_PORT=${HOST_PORT:-8081}
-    # Validate port number
-    while [[ ! "$HOST_PORT" =~ ^[0-9]+$ ]] || [ "$HOST_PORT" -lt 1 ] || [ "$HOST_PORT" -gt 65535 ]; do
-        log_error "Invalid port. Must be an integer between 1 and 65535."
-        read -rp "Enter host port to bind FileBrowser to [8081]: " HOST_PORT
-        HOST_PORT=${HOST_PORT:-8081}
+    #   - 5432:5432"
+PG_HOST_PORT="N/A"
+if [[ "$EXPOSE_PG" =~ ^[Yy]$ ]]; then
+    while true; do
+        read -rp "Enter host port for PostgreSQL [5432]: " PG_HOST_PORT
+        PG_HOST_PORT=${PG_HOST_PORT:-5432}
+        if validate_port "$PG_HOST_PORT"; then
+            break
+        fi
     done
-    PORT_MAPPING_BLOCK="ports:
-      - ${HOST_PORT}:80"
+    PG_PORT_MAPPING_BLOCK="ports:
+      - ${PG_HOST_PORT}:5432"
 fi
 
-echo -e "\n${BLUE}>>> Step 2: Configure Cloudflare Subdomain & Network${NC}"
-read -rp "Enter the subdomain they will connect to (e.g. files.example.com): " SUBDOMAIN
+# PostgREST Port
+read -rp "Expose PostgREST API port (3000) to the host system? (y/n) [y]: " EXPOSE_PGRST
+EXPOSE_PGRST=${EXPOSE_PGRST:-y}
+PGRST_PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
+    # Change the port number before the colon (3000) to whatever port you want.
+    # ports:
+    #   - 3000:3000"
+PGRST_HOST_PORT="N/A"
+if [[ "$EXPOSE_PGRST" =~ ^[Yy]$ ]]; then
+    while true; do
+        read -rp "Enter host port for PostgREST API [3000]: " PGRST_HOST_PORT
+        PGRST_HOST_PORT=${PGRST_HOST_PORT:-3000}
+        if validate_port "$PGRST_HOST_PORT"; then
+            break
+        fi
+    done
+    PGRST_PORT_MAPPING_BLOCK="ports:
+      - ${PGRST_HOST_PORT}:3000"
+fi
+
+echo -e "\n${BLUE}>>> Step 3: PostgREST Settings${NC}"
+read -rp "Enter PostgREST Schema [public]: " PGRST_SCHEMA
+PGRST_SCHEMA=${PGRST_SCHEMA:-public}
+
+read -rp "Enter PostgREST Anonymous Role [anon]: " PGRST_ANON_ROLE
+PGRST_ANON_ROLE=${PGRST_ANON_ROLE:-anon}
+
+echo -e "\n${BLUE}>>> Step 4: Configure Cloudflare Subdomain & Network${NC}"
+read -rp "Enter subdomain for PostgREST API (e.g. api.example.com): " SUBDOMAIN
 while [ -z "$SUBDOMAIN" ]; do
     log_error "Subdomain cannot be empty."
     read -rp "Enter the subdomain: " SUBDOMAIN
@@ -94,17 +144,8 @@ if ! docker network inspect "$CLOUDFLARE_NET" >/dev/null 2>&1; then
     fi
 fi
 
-echo -e "\n${BLUE}>>> Step 3: Configure Admin Credentials${NC}"
-read -rsp "Enter the initial password for the admin account: " ADMIN_PASS
-echo ""
-while [ -z "$ADMIN_PASS" ]; do
-    log_error "Password cannot be empty."
-    read -rsp "Enter the initial password for the admin account: " ADMIN_PASS
-    echo ""
-done
-
 # 3. Create Folder and Configuration Files
-TARGET_DIR="$(pwd)/filebrowserContainer"
+TARGET_DIR="$(pwd)/postgres-postgrest"
 log_info "Creating deployment directory at: ${TARGET_DIR}"
 
 if [ -d "$TARGET_DIR" ]; then
@@ -120,41 +161,55 @@ if [ -d "$TARGET_DIR" ]; then
     fi
 fi
 
-mkdir -p "${TARGET_DIR}/config"
-mkdir -p "${TARGET_DIR}/data"
+mkdir -p "$TARGET_DIR"
 
-# Write config.yaml
-cat <<EOF > "${TARGET_DIR}/config/config.yaml"
-server:
-  database: /home/filebrowser/data/filebrowser.db
-  sources:
-    - path: /srv
+# Write init.sql for Postgres setup
+cat <<EOF > "${TARGET_DIR}/init.sql"
+-- Automatically generated initialization script for PostgREST
+CREATE ROLE ${PGRST_ANON_ROLE} NOLOGIN;
+GRANT ${PGRST_ANON_ROLE} TO ${DB_USER};
 EOF
-log_success "Created: ${TARGET_DIR}/config/config.yaml"
+log_success "Created initialization script: ${TARGET_DIR}/init.sql"
 
 # Write .env file
 cat <<EOF > "${TARGET_DIR}/.env"
-FILEBROWSER_ADMIN_PASSWORD="${ADMIN_PASS}"
+POSTGRES_DB=${DB_NAME}
+POSTGRES_USER=${DB_USER}
+POSTGRES_PASSWORD=${DB_PASS}
+PGRST_DB_SCHEMA=${PGRST_SCHEMA}
+PGRST_DB_ANON_ROLE=${PGRST_ANON_ROLE}
 EOF
-log_success "Created: ${TARGET_DIR}/.env"
+log_success "Created env config: ${TARGET_DIR}/.env"
 
 # Write docker-compose.yml
 cat <<EOF > "${TARGET_DIR}/docker-compose.yml"
 services:
-  filebrowser:
-    image: gtstef/filebrowser:stable
-    container_name: filebrowser
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
     restart: unless-stopped
-    user: root
-    ${PORT_MAPPING_BLOCK}
-    volumes:
-      - /:/srv
-      - ./data:/home/filebrowser/data
-      - ./config/config.yaml:/home/filebrowser/data/config.yaml
     environment:
-      - FILEBROWSER_DATABASE=/home/filebrowser/data/filebrowser.db
-      - FILEBROWSER_CONFIG=/home/filebrowser/data/config.yaml
-      - FILEBROWSER_ADMIN_PASSWORD=\${FILEBROWSER_ADMIN_PASSWORD}
+      POSTGRES_DB: \${POSTGRES_DB}
+      POSTGRES_USER: \${POSTGRES_USER}
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}
+    volumes:
+      - ./data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ${PG_PORT_MAPPING_BLOCK}
+    networks:
+      - ${CLOUDFLARE_NET}
+
+  postgrest:
+    image: postgrest/postgrest:v12.0.2
+    container_name: postgrest
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@postgres:5432/\${POSTGRES_DB}
+      PGRST_DB_SCHEMA: \${PGRST_DB_SCHEMA}
+      PGRST_DB_ANON_ROLE: \${PGRST_DB_ANON_ROLE}
+    depends_on:
+      - postgres
+    ${PGRST_PORT_MAPPING_BLOCK}
     networks:
       - ${CLOUDFLARE_NET}
 
@@ -165,18 +220,18 @@ EOF
 log_success "Created: ${TARGET_DIR}/docker-compose.yml"
 
 # 4. Show Compose file configuration
-echo -e "\n${BLUE}>>> Step 4: Review Configuration${NC}"
+echo -e "\n${BLUE}>>> Step 5: Review Configuration${NC}"
 echo -e "${GREEN}============================================================${NC}"
 cat "${TARGET_DIR}/docker-compose.yml"
 echo -e "${GREEN}============================================================${NC}"
 
-read -rp "Deploy the FileBrowser Quantum container now? (y/n) [y]: " DEPLOY_CONFIRM
+read -rp "Deploy the Postgres & PostgREST containers now? (y/n) [y]: " DEPLOY_CONFIRM
 DEPLOY_CONFIRM=${DEPLOY_CONFIRM:-y}
 
 if [[ "$DEPLOY_CONFIRM" =~ ^[Yy]$ ]]; then
-    log_info "Deploying container..."
+    log_info "Deploying containers..."
     (cd "$TARGET_DIR" && $DOCKER_COMPOSE_CMD up -d)
-    log_success "FileBrowser Quantum is running!"
+    log_success "Services are running!"
 else
     log_warning "Deployment skipped by user."
 fi
@@ -187,14 +242,15 @@ echo -e "${GREEN}                    Deployment Complete!                    ${N
 echo -e "${GREEN}============================================================${NC}"
 
 echo -e "\n${BLUE}=== Connection Details ===${NC}"
-echo -e "Container Name:   ${GREEN}filebrowser${NC}"
-if [[ "$HOST_PORT" != "N/A" ]]; then
-    echo -e "Local Access:     ${YELLOW}http://localhost:${HOST_PORT}${NC}"
-else
-    echo -e "Local Access:     ${YELLOW}No ports exposed on host (Access via Tunnel only)${NC}"
+echo -e "PostgreSQL Database: ${GREEN}${DB_NAME}${NC}"
+echo -e "PostgreSQL User:     ${GREEN}${DB_USER}${NC}"
+echo -e "PostgreSQL Password: ${GREEN}${DB_PASS}${NC}"
+if [[ "$PG_HOST_PORT" != "N/A" ]]; then
+    echo -e "PostgreSQL Local:    ${YELLOW}localhost:${PG_HOST_PORT}${NC}"
 fi
-echo -e "Default User:     ${GREEN}admin${NC}"
-echo -e "Default Password: ${GREEN}${ADMIN_PASS}${NC}"
+if [[ "$PGRST_HOST_PORT" != "N/A" ]]; then
+    echo -e "PostgREST API Local: ${YELLOW}http://localhost:${PGRST_HOST_PORT}${NC}"
+fi
 
 echo -e "\n${BLUE}=== Cloudflare Tunnel Integration Instructions ===${NC}"
 echo -e "To configure access via Cloudflare Zero Trust Tunnels:"
@@ -203,14 +259,14 @@ echo -e "  2. Edit the active Tunnel servicing this network."
 echo -e "  3. Click ${YELLOW}Add a public hostname${NC} and enter:"
 echo -e "     - Subdomain/Domain: ${GREEN}${SUBDOMAIN}${NC}"
 echo -e "     - Service Type:     ${YELLOW}HTTP${NC}"
-echo -e "     - URL:              ${YELLOW}http://filebrowser:80${NC} (Internal Docker DNS)"
-echo -e "  4. Save Hostname. Cloudflare will route traffic securely to the container."
+echo -e "     - URL:              ${YELLOW}http://postgrest:3000${NC} (Internal Docker DNS)"
+echo -e "  4. Save Hostname. Cloudflare will route traffic securely to the API."
 
 echo -e "\n${BLUE}=== Management Commands ===${NC}"
 echo -e "View Container Logs:"
 echo -e "  ${YELLOW}cd ${TARGET_DIR} && ${DOCKER_COMPOSE_CMD} logs -f${NC}"
-echo -e "Shutdown Container:"
+echo -e "Shutdown Containers:"
 echo -e "  ${YELLOW}cd ${TARGET_DIR} && ${DOCKER_COMPOSE_CMD} down${NC}"
-echo -e "Restart Container:"
+echo -e "Restart Containers:"
 echo -e "  ${YELLOW}cd ${TARGET_DIR} && ${DOCKER_COMPOSE_CMD} restart${NC}"
 echo -e "============================================================\n"

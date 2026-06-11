@@ -174,34 +174,61 @@ fi
 
 # --- Gather Ports and Network ---
 echo -e "\n${BLUE}>>> Step 2: Configure Port Exposure${NC}"
+read -rp "Would you like to expose the container ports to the host system? (y/n) [n]: " EXPOSE_PORT
+EXPOSE_PORT=${EXPOSE_PORT:-n}
+
+BIZ_PORT_BLOCK=""
 BIZ_PORT=""
 if [ "$HAS_BIZ" = true ]; then
-    while true; do
-        read -rp "Enter host port for ${NAME}-biz [8082]: " BIZ_PORT
-        BIZ_PORT=${BIZ_PORT:-8082}
-        if validate_port "$BIZ_PORT" "${NAME}-biz"; then
-            break
-        fi
-    done
+    if [[ "$EXPOSE_PORT" =~ ^[Yy]$ ]]; then
+        while true; do
+            read -rp "Enter host port for ${NAME}-biz [8082]: " BIZ_PORT
+            BIZ_PORT=${BIZ_PORT:-8082}
+            if validate_port "$BIZ_PORT" "${NAME}-biz"; then
+                break
+            fi
+        done
+        BIZ_PORT_BLOCK="ports:
+      - \"${BIZ_PORT}:80\""
+    else
+        BIZ_PORT_BLOCK="# To expose this port to the host system, uncomment the lines below.
+    # Change the port number before the colon (8082) to whatever port you want.
+    # ports:
+    #   - \"8082:80\""
+    fi
 fi
 
+WEB_PORT_BLOCK=""
 WEB_PORT=""
 if [ "$HAS_WEB" = true ]; then
-    DEFAULT_WEB_PORT="8083"
-    if [ "$HAS_BIZ" = false ]; then
-        DEFAULT_WEB_PORT="8082"
+    if [[ "$EXPOSE_PORT" =~ ^[Yy]$ ]]; then
+        DEFAULT_WEB_PORT="8083"
+        if [ "$HAS_BIZ" = false ] || [ -z "${BIZ_PORT:-}" ]; then
+            DEFAULT_WEB_PORT="8082"
+        fi
+        while true; do
+            read -rp "Enter host port for ${NAME}-website [${DEFAULT_WEB_PORT}]: " WEB_PORT
+            WEB_PORT=${WEB_PORT:-$DEFAULT_WEB_PORT}
+            if [ -n "${BIZ_PORT:-}" ] && [ "$WEB_PORT" = "$BIZ_PORT" ]; then
+                log_error "Web port cannot be the same as business card port ($BIZ_PORT)!"
+                continue
+            fi
+            if validate_port "$WEB_PORT" "${NAME}-website"; then
+                break
+            fi
+        done
+        WEB_PORT_BLOCK="ports:
+      - \"${WEB_PORT}:80\""
+    else
+        DEFAULT_WEB_PORT="8083"
+        if [ "$HAS_BIZ" = false ]; then
+            DEFAULT_WEB_PORT="8082"
+        fi
+        WEB_PORT_BLOCK="# To expose this port to the host system, uncomment the lines below.
+    # Change the port number before the colon (${DEFAULT_WEB_PORT}) to whatever port you want.
+    # ports:
+    #   - \"${DEFAULT_WEB_PORT}:80\""
     fi
-    while true; do
-        read -rp "Enter host port for ${NAME}-website [${DEFAULT_WEB_PORT}]: " WEB_PORT
-        WEB_PORT=${WEB_PORT:-$DEFAULT_WEB_PORT}
-        if [ -n "$BIZ_PORT" ] && [ "$WEB_PORT" = "$BIZ_PORT" ]; then
-            log_error "Web port cannot be the same as business card port ($BIZ_PORT)!"
-            continue
-        fi
-        if validate_port "$WEB_PORT" "${NAME}-website"; then
-            break
-        fi
-    done
 fi
 
 echo -e "\n${BLUE}>>> Step 3: Configure Network${NC}"
@@ -262,8 +289,7 @@ if [ "$HAS_BIZ" = true ]; then
     image: nginx:alpine
     container_name: ${NAME}-biz
     restart: unless-stopped
-    ports:
-      - "${BIZ_PORT}:80"
+    ${BIZ_PORT_BLOCK}
     volumes:
       - ./biz:/usr/share/nginx/html
 EOF
@@ -281,8 +307,7 @@ if [ "$HAS_WEB" = true ]; then
     image: nginx:alpine
     container_name: ${NAME}-website
     restart: unless-stopped
-    ports:
-      - "${WEB_PORT}:80"
+    ${WEB_PORT_BLOCK}
     volumes:
       - ./website:/usr/share/nginx/html
 EOF
@@ -329,11 +354,19 @@ echo -e "${GREEN}============================================================${N
 echo -e "\n${BLUE}=== Connection Details ===${NC}"
 if [ "$HAS_BIZ" = true ]; then
     echo -e "Business Card Container: ${GREEN}${NAME}-biz${NC}"
-    echo -e "Local Access:            ${YELLOW}http://localhost:${BIZ_PORT}${NC}"
+    if [[ "$EXPOSE_PORT" =~ ^[Yy]$ ]]; then
+        echo -e "Local Access:            ${YELLOW}http://localhost:${BIZ_PORT}${NC}"
+    else
+        echo -e "Local Access:            ${YELLOW}No ports exposed on host (Access via Tunnel only)${NC}"
+    fi
 fi
 if [ "$HAS_WEB" = true ]; then
     echo -e "Website Container:       ${GREEN}${NAME}-website${NC}"
-    echo -e "Local Access:            ${YELLOW}http://localhost:${WEB_PORT}${NC}"
+    if [[ "$EXPOSE_PORT" =~ ^[Yy]$ ]]; then
+        echo -e "Local Access:            ${YELLOW}http://localhost:${WEB_PORT}${NC}"
+    else
+        echo -e "Local Access:            ${YELLOW}No ports exposed on host (Access via Tunnel only)${NC}"
+    fi
 fi
 
 if [ -n "$NET_NAME" ]; then

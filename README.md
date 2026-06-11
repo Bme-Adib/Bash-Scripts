@@ -28,12 +28,13 @@ Stay updated with new guides, tutorials, and scripts:
 Click any of the scripts below to jump directly to its description, installation instructions, and configuration options:
 
 * 🖥️ [Ubuntu Server Initial Setup (`server_setup.sh`)](#server-setup)
-* 🐳 [Docker & Compose Native Installer (`setup_docker.sh`)](#docker-install)
+* 🐳 [Docker Manager & Installer (`manage_docker.sh`)](#docker-manager)
 * ☁️ [Cloudflare Tunnel Auto-Setup (`setup_docker_cloudflare.sh`)](#cloudflare-tunnel)
 * 📇 [Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)](#portfolio-bizcard)
 * 📂 [FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)](#filebrowser)
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
+* 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
 
 ---
 
@@ -51,7 +52,7 @@ Click any of the scripts below to jump directly to its description, installation
 3. **Execute:**
    ```bash
    ./<script_name>.sh
-   # (Note: server_setup.sh and setup_docker.sh require sudo)
+   # (Note: server_setup.sh and manage_docker.sh require sudo)
    ```
 
 ---
@@ -82,22 +83,28 @@ The script provides a choice menu with the following operations:
 
 ---
 
-<a id="docker-install"></a>
-## 🐳 Docker & Compose Native Installer (`setup_docker.sh`)
+<a id="docker-manager"></a>
+## 🐳 Docker Manager & Installer (`manage_docker.sh`)
 
 ### Description
-Installs the official Docker CE Engine, Docker CE CLI, Containerd, Docker Buildx, and Docker Compose V2 plugin natively. It handles adding keyrings, GPG keys, and apt repositories for Debian/Ubuntu based systems (with pop/mint mapping safety). If run on unsupported architectures/distributions, it automatically falls back to Docker's official convenience installation script.
+An interactive, menu-driven management utility for Docker. It provides a complete installer for Docker and Docker Compose V2 natively, and includes essential system diagnostics, daemon control, and space optimization tasks (pruning unused containers, volumes, and images).
 
 ### How to Use
-Run with root permissions:
+Run with root permissions (required to install packages or manage the Docker service daemon):
 ```bash
-sudo ./setup_docker.sh
+sudo ./manage_docker.sh
 ```
 
 ### Options & Inputs Inside the Script
-* **Pre-Check Exits**: If Docker and Docker Compose are already present on the system, the script displays their versions and exits safely to prevent double-installation.
-* **Proceed Confirmation**: Prompts for user confirmation before starting the package downloads (`y/n` default `y`).
-* **Non-Root Group Access**: Automatically detects the standard user who invoked the script with `sudo` and prompts/adds them to the `docker` group so Docker commands can be run without prefixing `sudo`.
+* **`1) Install Docker & Docker Compose`**: Automatically installs Docker, components, GPG keys, and compose plugins. Prompts to add your non-root user to the `docker` group.
+* **`2) Check Docker Service Status`**: Checks if the daemon is active and running, and outputs system configuration info.
+* **`3) Show Docker Disk Space Usage`**: Displays a breakdown of disk space consumed by containers, images, and volumes.
+* **`4) Stop All Running Containers`**: Gracefully stops all active containers on the server.
+* **`5) Remove Unused Volumes (Volume Prune)`**: Cleans out orphan volumes not attached to any container.
+* **`6) Remove Unused Images (Image Prune)`**: Prompts to prune dangling images (without tags) or all unused images.
+* **`7) Remove Unused Volumes & Images`**: Performs a combined cleanup of both volumes and images.
+* **`8) Deep Clean System (System Prune)`**: A complete purge of all stopped containers, networks, dangling/unused images, and local volumes.
+* **`9) Restart Docker Daemon Service`**: Restarts the systemd Docker service daemon.
 
 ---
 
@@ -203,6 +210,29 @@ Spawns a Dozzle container to provide a beautiful, real-time web-based dashboard 
 * **Cloudflare Subdomain**: Subdomain hostname (e.g. `logs.example.com`) for Zero Trust Routing.
 * **Cloudflare Network**: Docker network name (default `proxy-net`) to connect Dozzle and cloudflared.
 * **Deploy Confirmation**: Reviews compose file configuration and launches the Dozzle service.
+
+---
+
+<a id="postgres-postgrest-setup"></a>
+## 🗄️ Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)
+
+### Description
+Deploys a Postgres 16 database running on Alpine Linux alongside a PostgREST container. PostgREST automatically exposes your database tables, views, and functions directly as a RESTful web API. The setup script automatically creates the anonymous access database role (`anon`) and grants proper schema privileges to make configuration completely seamless.
+
+### How to Use
+```bash
+./setup_docker_postgres_postgrest.sh
+```
+
+### Options & Inputs Inside the Script
+* **Database Name**: The database schema to initialize (defaults to `app_db`).
+* **Database Credentials**: Specify custom database owner username and password (generates a secure random 16-character password by default).
+* **Database Port Exposure**: Option to bind the PostgreSQL port (`5432`) to the host. Checks if the port is in use.
+* **PostgREST API Port Exposure**: Option to bind the PostgREST API port (`3000`) to the host (defaults to `3000`). Checks if the port is in use.
+* **PostgREST Configuration**: Set custom API schema (default `public`) and anonymous db role (default `anon`).
+* **Cloudflare Subdomain**: The subdomain (e.g., `api.example.com`) to route REST API traffic.
+* **Cloudflare Network**: Docker network name (default `proxy-net`). Offers to create if missing.
+* **Deploy Confirmation**: Reviews settings and launches both Postgres and PostgREST containers.
 
 ---
 

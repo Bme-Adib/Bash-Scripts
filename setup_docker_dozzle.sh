@@ -58,7 +58,10 @@ echo -e "\n${BLUE}>>> Step 1: Configure Port Exposure${NC}"
 read -rp "Would you like to expose the Dozzle port to the host system? (y/n) [n]: " EXPOSE_PORT
 EXPOSE_PORT=${EXPOSE_PORT:-n}
 
-PORT_MAPPING_BLOCK=""
+PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
+    # Change the port number before the colon (8888) to whatever port you want.
+    # ports:
+    #   - 8888:8080"
 HOST_PORT="N/A"
 if [[ "$EXPOSE_PORT" =~ ^[Yy]$ ]]; then
     while true; do

@@ -92,13 +92,25 @@ while true; do
 done
 
 echo -e "\n${BLUE}>>> Step 2: Configure Port Exposure${NC}"
-while true; do
-    read -rp "Enter port to bind [6806]: " PORT
-    PORT=${PORT:-"6806"}
-    if validate_port "$PORT"; then
-        break
-    fi
-done
+read -rp "Would you like to expose the SiYuan port to the host system? (y/n) [n]: " EXPOSE_PORT
+EXPOSE_PORT=${EXPOSE_PORT:-n}
+
+PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
+    # Change the port number before the colon (6806) to whatever port you want.
+    # ports:
+    #   - 6806:6806"
+PORT="N/A"
+if [[ "$EXPOSE_PORT" =~ ^[Yy]$ ]]; then
+    while true; do
+        read -rp "Enter port to bind [6806]: " PORT
+        PORT=${PORT:-"6806"}
+        if validate_port "$PORT"; then
+            break
+        fi
+    done
+    PORT_MAPPING_BLOCK="ports:
+      - \"$PORT:6806\""
+fi
 
 echo -e "\n${BLUE}>>> Step 3: Configure Security & Timezone${NC}"
 # Generate a random password as default
@@ -141,8 +153,7 @@ services:
     command:
       - --workspace=/siyuan/workspace/
       - --accessAuthCode=$AUTH_CODE
-    ports:
-      - "$PORT:6806"
+    ${PORT_MAPPING_BLOCK}
     volumes:
       - ./workspace:/siyuan/workspace
     environment:
@@ -183,7 +194,11 @@ echo -e "${GREEN}============================================================${N
 
 echo -e "\n${BLUE}=== Connection Details ===${NC}"
 echo -e "Container Name:   ${GREEN}siyuan${NC}"
-echo -e "Local Access:     ${YELLOW}http://localhost:${PORT}${NC}"
+if [[ "$PORT" != "N/A" ]]; then
+    echo -e "Local Access:     ${YELLOW}http://localhost:${PORT}${NC}"
+else
+    echo -e "Local Access:     ${YELLOW}No ports exposed on host (Access via Tunnel only)${NC}"
+fi
 echo -e "Auth Code:        ${GREEN}${AUTH_CODE}${NC}"
 
 echo -e "\n${BLUE}=== Management Commands ===${NC}"
