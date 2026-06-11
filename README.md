@@ -27,12 +27,12 @@ Stay updated with new guides, tutorials, and scripts:
 
 Click any of the scripts below to jump directly to its description, installation instructions, and configuration options:
 
-* 🖥️ [Ubuntu Server Initial Setup (`server_setup.sh`)](#-ubuntu-server-initial-setup-server_setupsh)
-* 🐳 [Docker & Compose Native Installer (`setup_docker.sh`)](#-docker--compose-native-installer-setup_dockersh)
-* ☁️ [Cloudflare Tunnel Auto-Setup (`setup_docker_cloudflare.sh`)](#-cloudflare-tunnel-auto-setup-setup_docker_cloudflaresh)
-* 📇 [Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)](#-nginx-portfolio--business-card-creator-setup_docker_website_buisnesscardsh)
-* 📂 [FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)](#-filebrowser-quantum-container-setup-setup_docker_filebrowsersh)
-* 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#-siyuan-note-private-workspace-installer-setup_docker_siyyuansh)
+* 🖥️ [Ubuntu Server Initial Setup (`server_setup.sh`)](#server-setup)
+* 🐳 [Docker & Compose Native Installer (`setup_docker.sh`)](#docker-install)
+* ☁️ [Cloudflare Tunnel Auto-Setup (`setup_docker_cloudflare.sh`)](#cloudflare-tunnel)
+* 📇 [Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)](#portfolio-bizcard)
+* 📂 [FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)](#filebrowser)
+* 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 
 ---
 
@@ -55,6 +55,7 @@ Click any of the scripts below to jump directly to its description, installation
 
 ---
 
+<a id="server-setup"></a>
 ## 🖥️ Ubuntu Server Initial Setup (`server_setup.sh`)
 
 ### Description
@@ -80,6 +81,7 @@ The script provides a choice menu with the following operations:
 
 ---
 
+<a id="docker-install"></a>
 ## 🐳 Docker & Compose Native Installer (`setup_docker.sh`)
 
 ### Description
@@ -98,6 +100,7 @@ sudo ./setup_docker.sh
 
 ---
 
+<a id="cloudflare-tunnel"></a>
 ## ☁️ Cloudflare Tunnel Auto-Setup (`setup_docker_cloudflare.sh`)
 
 ### Description
@@ -116,6 +119,7 @@ Generates and deploys a standalone Docker container running Cloudflare's `cloudf
 
 ---
 
+<a id="portfolio-bizcard"></a>
 ## 📇 Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)
 
 ### Description
@@ -138,6 +142,7 @@ A template scaffolder that sets up folders, generates modern placeholder web pag
 
 ---
 
+<a id="filebrowser"></a>
 ## 📂 FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)
 
 ### Description
@@ -157,6 +162,7 @@ Spawns a highly configurable FileBrowser container allowing full-filesystem web 
 
 ---
 
+<a id="siyuan-note"></a>
 ## 📓 SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)
 
 ### Description
