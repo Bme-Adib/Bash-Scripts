@@ -1,8 +1,5 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status
-# Treat unset variables as an error
-# Prevent errors in a pipeline from being masked
+# --- Robust Safety & Error Handling ---
 set -euo pipefail
 
 # --- Color Codes for UX ---
@@ -12,21 +9,22 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# --- Cleanup Helper ---
-# No global temp blocks needed anymore since we write the file directly
-
-# --- Helper Functions ---
+# --- Styled Log Helpers ---
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 
+# --- Helper Functions ---
 validate_port() {
     local port="$1"
     local desc="$2"
     if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
         log_error "Invalid port number for $desc: '$port'. Must be between 1 and 65535."
         return 1
+    fi
+    if command -v ss &>/dev/null && ss -tln | grep -q ":${port} "; then
+        log_warning "Port $port appears to be already in use on your host system!"
     fi
     return 0
 }
@@ -90,14 +88,36 @@ create_placeholder_html() {
 EOF
 }
 
-# --- 1. Gather & Sanitize Project Information ---
+# --- Header ---
 echo -e "${GREEN}============================================================${NC}"
 echo -e "${GREEN}  Bash Script By Adib Builds (https://github.com/Bme-Adib)  ${NC}"
 echo -e "${GREEN}============================================================${NC}"
 echo -e "${BLUE}=== Docker Compose Project Creator ===${NC}\n"
 
+# 1. System Dependency Checks
+log_info "Verifying system requirements..."
+
+if ! command -v docker >/dev/null 2>&1; then
+    log_error "Docker is not installed on this system. Please install Docker first."
+    exit 1
+fi
+
+DOCKER_COMPOSE_CMD=""
+if docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE_CMD="docker-compose"
+else
+    log_error "Docker Compose is required but not installed."
+    exit 1
+fi
+log_success "Docker & Docker Compose detected."
+
+# 2. Gather Configuration Settings
+echo -e "\n${BLUE}>>> Step 1: Configure Project Name & Type${NC}"
 while true; do
-    read -p "Enter project name (e.g., adib): " RAW_NAME
+    read -rp "Enter project name [adib]: " RAW_NAME
+    RAW_NAME=${RAW_NAME:-adib}
     # Convert to lowercase and strip invalid characters
     NAME=$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_-]//g')
     
@@ -112,15 +132,19 @@ while true; do
 done
 
 # Parent project folder
-PROJECT_DIR="${NAME}"
+PROJECT_DIR="$(pwd)/${NAME}"
 
-# --- Check if Project Folder / Config already exists ---
-if [ -d "$PROJECT_DIR" ] && [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
-    log_warning "Project directory '${PROJECT_DIR}' already contains a docker-compose.yml file."
-    read -p "Do you want to overwrite it? (y/N): " CONFIRM
-    if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
-        log_info "Operation aborted."
-        exit 0
+# --- Check if Project Folder already exists ---
+if [ -d "$PROJECT_DIR" ]; then
+    log_warning "Directory ${PROJECT_DIR} already exists."
+    read -rp "Would you like to overwrite it? (y/n) [n]: " OVERWRITE_DIR
+    OVERWRITE_DIR=${OVERWRITE_DIR:-n}
+    if [[ "$OVERWRITE_DIR" =~ ^[Yy]$ ]]; then
+        log_info "Removing existing folder..."
+        rm -rf "$PROJECT_DIR"
+    else
+        log_error "Setup cancelled to protect existing folder."
+        exit 1
     fi
 fi
 
@@ -129,7 +153,8 @@ while true; do
     echo "1) Business Card Only"
     echo "2) Website Only"
     echo "3) Business Card + Website"
-    read -p "Selection [1-3]: " TYPE
+    read -rp "Selection [1-3] [3]: " TYPE
+    TYPE=${TYPE:-3}
     if [ "$TYPE" = "1" ] || [ "$TYPE" = "2" ] || [ "$TYPE" = "3" ]; then
         break
     else
@@ -147,11 +172,13 @@ if [ "$TYPE" = "2" ] || [ "$TYPE" = "3" ]; then
     HAS_WEB=true
 fi
 
-# --- 2. Gather Ports and Network ---
+# --- Gather Ports and Network ---
+echo -e "\n${BLUE}>>> Step 2: Configure Port Exposure${NC}"
 BIZ_PORT=""
 if [ "$HAS_BIZ" = true ]; then
     while true; do
-        read -p "Enter port for ${NAME}-biz: " BIZ_PORT
+        read -rp "Enter host port for ${NAME}-biz [8082]: " BIZ_PORT
+        BIZ_PORT=${BIZ_PORT:-8082}
         if validate_port "$BIZ_PORT" "${NAME}-biz"; then
             break
         fi
@@ -160,8 +187,13 @@ fi
 
 WEB_PORT=""
 if [ "$HAS_WEB" = true ]; then
+    DEFAULT_WEB_PORT="8083"
+    if [ "$HAS_BIZ" = false ]; then
+        DEFAULT_WEB_PORT="8082"
+    fi
     while true; do
-        read -p "Enter port for ${NAME}-website: " WEB_PORT
+        read -rp "Enter host port for ${NAME}-website [${DEFAULT_WEB_PORT}]: " WEB_PORT
+        WEB_PORT=${WEB_PORT:-$DEFAULT_WEB_PORT}
         if [ -n "$BIZ_PORT" ] && [ "$WEB_PORT" = "$BIZ_PORT" ]; then
             log_error "Web port cannot be the same as business card port ($BIZ_PORT)!"
             continue
@@ -172,12 +204,35 @@ if [ "$HAS_WEB" = true ]; then
     done
 fi
 
-read -p "Enter network name (leave empty for none): " NET_NAME
-# Trim whitespace from network name
-NET_NAME=$(echo "$NET_NAME" | xargs)
+echo -e "\n${BLUE}>>> Step 3: Configure Network${NC}"
+# Show existing networks on the host
+log_info "Detecting active Docker networks on host..."
+if docker network ls >/dev/null 2>&1; then
+    echo -e "${YELLOW}Existing Docker Networks on this server:${NC}"
+    docker network ls --format "  - {{.Name}}" | grep -vE "bridge|host|none" || echo "  No custom networks found."
+    echo ""
+fi
+
+read -rp "Enter network name (leave empty for none) [proxy-net]: " NET_NAME
+NET_NAME=${NET_NAME:-proxy-net}
+
+if [ -n "$NET_NAME" ]; then
+    # Check and prompt to create network if missing
+    if ! docker network inspect "$NET_NAME" >/dev/null 2>&1; then
+        log_warning "Docker network '${NET_NAME}' does not exist."
+        read -rp "Would you like to create the '${NET_NAME}' network now? (y/n) [y]: " CREATE_NET
+        CREATE_NET=${CREATE_NET:-y}
+        if [[ "$CREATE_NET" =~ ^[Yy]$ ]]; then
+            docker network create "$NET_NAME"
+            log_success "Created external docker network: ${NET_NAME}"
+        else
+            log_warning "Skipping network creation. Docker compose may fail if it is missing."
+        fi
+    fi
+fi
 
 # --- Create Folders & Boilerplate HTML ---
-log_info "Creating project directories..."
+log_info "Creating project directories at: ${PROJECT_DIR}"
 mkdir -p "$PROJECT_DIR"
 
 BIZ_DIR="${PROJECT_DIR}/biz"
@@ -186,14 +241,16 @@ WEB_DIR="${PROJECT_DIR}/website"
 if [ "$HAS_BIZ" = true ]; then
     mkdir -p "$BIZ_DIR"
     create_placeholder_html "$BIZ_DIR" "Business Card: ${NAME}"
+    log_success "Created: ${BIZ_DIR}/index.html"
 fi
 
 if [ "$HAS_WEB" = true ]; then
     mkdir -p "$WEB_DIR"
     create_placeholder_html "$WEB_DIR" "Website: ${NAME}"
+    log_success "Created: ${WEB_DIR}/index.html"
 fi
 
-# --- 3. Create docker-compose.yml ---
+# --- Create docker-compose.yml ---
 log_info "Writing docker-compose.yml..."
 cat <<EOF > "${PROJECT_DIR}/docker-compose.yml"
 services:
@@ -245,31 +302,64 @@ networks:
     external: true
 EOF
 fi
+log_success "Created: ${PROJECT_DIR}/docker-compose.yml"
 
-log_success "Project directory '${PROJECT_DIR}' and configuration are ready!"
+# --- Review & Deploy ---
+echo -e "\n${BLUE}>>> Step 4: Review Configuration${NC}"
+echo -e "${GREEN}============================================================${NC}"
+cat "${PROJECT_DIR}/docker-compose.yml"
+echo -e "${GREEN}============================================================${NC}"
 
-# --- 4. Smart Editor Launch (Before execution) ---
-read -p "Would you like to open/review docker-compose.yml before running the services? (y/N): " OPEN_EDITOR
-if [[ "$OPEN_EDITOR" =~ ^[yY]$ ]]; then
-    # Use system EDITOR, fallback to nano, then vi
-    EDITOR_CMD="${EDITOR:-$(which nano 2>/dev/null || which vi 2>/dev/null || echo "")}"
-    if [ -n "$EDITOR_CMD" ]; then
-        $EDITOR_CMD "${PROJECT_DIR}/docker-compose.yml"
-    else
-        log_warning "No text editor found (nano/vi). Displaying file instead:"
-        cat "${PROJECT_DIR}/docker-compose.yml"
+read -rp "Deploy the ${NAME} containers now? (y/n) [y]: " DEPLOY_CONFIRM
+DEPLOY_CONFIRM=${DEPLOY_CONFIRM:-y}
+
+if [[ "$DEPLOY_CONFIRM" =~ ^[Yy]$ ]]; then
+    log_info "Deploying containers..."
+    (cd "$PROJECT_DIR" && $DOCKER_COMPOSE_CMD up -d)
+    log_success "Containers are running!"
+else
+    log_warning "Deployment skipped by user."
+fi
+
+# --- Print Summary & Cloudflare Integration Instructions ---
+echo -e "\n${GREEN}============================================================${NC}"
+echo -e "${GREEN}                    Deployment Complete!                    ${NC}"
+echo -e "${GREEN}============================================================${NC}"
+
+echo -e "\n${BLUE}=== Connection Details ===${NC}"
+if [ "$HAS_BIZ" = true ]; then
+    echo -e "Business Card Container: ${GREEN}${NAME}-biz${NC}"
+    echo -e "Local Access:            ${YELLOW}http://localhost:${BIZ_PORT}${NC}"
+fi
+if [ "$HAS_WEB" = true ]; then
+    echo -e "Website Container:       ${GREEN}${NAME}-website${NC}"
+    echo -e "Local Access:            ${YELLOW}http://localhost:${WEB_PORT}${NC}"
+fi
+
+if [ -n "$NET_NAME" ]; then
+    echo -e "\n${BLUE}=== Cloudflare Tunnel Integration Instructions ===${NC}"
+    echo -e "To configure access via Cloudflare Zero Trust Tunnels:"
+    echo -e "  1. Log in to your Cloudflare Dashboard and navigate to ${GREEN}Access -> Tunnels${NC}."
+    echo -e "  2. Edit the active Tunnel servicing this network."
+    echo -e "  3. Click ${YELLOW}Add a public hostname${NC} and enter:"
+    if [ "$HAS_BIZ" = true ]; then
+        echo -e "     - Subdomain/Domain: e.g., ${GREEN}biz.${NAME}.example.com${NC}"
+        echo -e "     - Service Type:     ${YELLOW}HTTP${NC}"
+        echo -e "     - URL:              ${YELLOW}http://${NAME}-biz:80${NC}"
     fi
+    if [ "$HAS_WEB" = true ]; then
+        echo -e "     - Subdomain/Domain: e.g., ${GREEN}www.${NAME}.example.com${NC}"
+        echo -e "     - Service Type:     ${YELLOW}HTTP${NC}"
+        echo -e "     - URL:              ${YELLOW}http://${NAME}-website:80${NC}"
+    fi
+    echo -e "  4. Save Hostname. Cloudflare will route traffic securely to the container(s)."
 fi
 
-# --- 5. Prompt to start services ---
-read -p "Do you want to start the services now with 'docker compose up -d'? (y/N): " START_SERVICES
-if [[ "$START_SERVICES" =~ ^[yY]$ ]]; then
-    log_info "Navigating to ${PROJECT_DIR} and starting containers..."
-    (cd "$PROJECT_DIR" && docker compose up -d)
-    log_success "Services started successfully!"
-fi
-
-echo -e "\nTo manage this project, run:"
-echo -e "${GREEN}cd ${PROJECT_DIR}${NC}"
-echo -e "To start: ${BLUE}docker compose up -d${NC}"
-echo -e "To stop:  ${BLUE}docker compose down${NC}"
+echo -e "\n${BLUE}=== Management Commands ===${NC}"
+echo -e "View Container Logs:"
+echo -e "  ${YELLOW}cd ${PROJECT_DIR} && ${DOCKER_COMPOSE_CMD} logs -f${NC}"
+echo -e "Shutdown Containers:"
+echo -e "  ${YELLOW}cd ${PROJECT_DIR} && ${DOCKER_COMPOSE_CMD} down${NC}"
+echo -e "Restart Containers:"
+echo -e "  ${YELLOW}cd ${PROJECT_DIR} && ${DOCKER_COMPOSE_CMD} restart${NC}"
+echo -e "============================================================\n"
