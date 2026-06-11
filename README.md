@@ -33,6 +33,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 📇 [Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)](#portfolio-bizcard)
 * 📂 [FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)](#filebrowser)
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
+* 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
 
 ---
 
@@ -180,6 +181,25 @@ An automated setup utility for the privacy-focused, self-hosted note-taking appl
 * **Timezone**: Set container timezone (defaults to host system's timezone).
 * **PUID / PGID**: Automatically detects your current user's UID and GID to run the service under matching permissions.
 * **Deploy Confirmation**: Outputs compose file and deploys the container.
+
+---
+
+<a id="dozzle-setup"></a>
+## 🔍 Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)
+
+### Description
+Spawns a Dozzle container to provide a beautiful, real-time web-based dashboard for viewing logs of all your running Docker containers.
+
+### How to Use
+```bash
+./setup_docker_dozzle.sh
+```
+
+### Options & Inputs Inside the Script
+* **Port Exposure**: Option to bind the Dozzle port (internal `8080`) to a host port (defaults to `8888`). Checks if the port is in use.
+* **Cloudflare Subdomain**: Subdomain hostname (e.g. `logs.example.com`) for Zero Trust Routing.
+* **Cloudflare Network**: Docker network name (default `proxy-net`) to connect Dozzle and cloudflared.
+* **Deploy Confirmation**: Reviews compose file configuration and launches the Dozzle service.
 
 ---
 
