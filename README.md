@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue?style=for-the-badge&logo=docker)](https://www.docker.com)
 [![Bash](https://img.shields.io/badge/Shell-Bash_5.0+-green?style=for-the-badge&logo=gnu-bash)](https://www.gnu.org/software/bash/)
 
-Welcome! This repository contains a collection of interactive, robust, and automated bash helper scripts designed by **[Adib Builds](https://adibbuilds.com)**. These scripts aim to simplify home server management, automate initial Ubuntu Server hardening, and launch essential Docker applications and containers with zero hassle. 
+Welcome! This repository contains a collection of interactive, robust, and automated bash helper scripts designed by **[Adib Builds](https://adibbuilds.com)**. These scripts aim to simplify home server management, automate initial Ubuntu Server hardening, and launch essential Docker applications and containers with zero hassle.
 
 > [!TIP]
 > You can also check the **[Adib Builds Downloads Page](https://adibbuilds.com/downloads)** to find all of these scripts with one-click copy options, making it incredibly easy to copy and run them directly on your server!
