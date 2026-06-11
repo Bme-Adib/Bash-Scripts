@@ -2,6 +2,11 @@
 # --- Robust Safety & Error Handling ---
 set -euo pipefail
 
+# --- Redirect stdin to tty if piped ---
+if [ ! -t 0 ]; then
+    exec 0</dev/tty
+fi
+
 # --- Color Codes for UX ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'

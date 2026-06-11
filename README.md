@@ -64,8 +64,13 @@ Click any of the scripts below to jump directly to its description, installation
 An interactive, menu-driven post-installation script to configure, optimize, and secure fresh Ubuntu Servers. Before displaying the option menu, the script prints system statistics (OS name, Kernel, CPU model, BIOS version, RAM usage, and Partition storage info) to give you a quick health check of your system.
 
 ### How to Use
-Run with root permissions (required to configure system services, users, and networks):
+**One-Click Run (Recommended):**
 ```bash
+sudo bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/server_setup.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x server_setup.sh
 sudo ./server_setup.sh
 ```
 
@@ -90,8 +95,13 @@ The script provides a choice menu with the following operations:
 An interactive, menu-driven management utility for Docker. It provides a complete installer for Docker and Docker Compose V2 natively, and includes essential system diagnostics, daemon control, and space optimization tasks (pruning unused containers, volumes, and images).
 
 ### How to Use
-Run with root permissions (required to install packages or manage the Docker service daemon):
+**One-Click Run (Recommended):**
 ```bash
+sudo bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/manage_docker.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x manage_docker.sh
 sudo ./manage_docker.sh
 ```
 
@@ -115,7 +125,13 @@ sudo ./manage_docker.sh
 Generates and deploys a standalone Docker container running Cloudflare's `cloudflared` agent. This allows you to route external web traffic securely to your home server services via Cloudflare Tunnels without exposing ports on your home router or configuring dynamic DNS (DDNS).
 
 ### How to Use
+**One-Click Run (Recommended):**
 ```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_cloudflare.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_cloudflare.sh
 ./setup_docker_cloudflare.sh
 ```
 
@@ -137,7 +153,13 @@ A template scaffolder that sets up folders, generates modern placeholder web pag
 > You can easily design a beautiful, responsive digital business card using **[EnBizCard](https://enbizcard.vishnuraghav.com/)**. Once generated and downloaded, extract and move the files directly into your project's `./biz` folder to replace the placeholder page!
 
 ### How to Use
+**One-Click Run (Recommended):**
 ```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_website_buisnessCard.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_website_buisnessCard.sh
 ./setup_docker_website_buisnessCard.sh
 ```
 
@@ -160,7 +182,13 @@ A template scaffolder that sets up folders, generates modern placeholder web pag
 Spawns a highly configurable FileBrowser container allowing full-filesystem web management (`/` mapped to container `/srv`). Ideal for quick file transfers and management of configurations on your home server.
 
 ### How to Use
+**One-Click Run (Recommended):**
 ```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_filebrowser.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_filebrowser.sh
 ./setup_docker_filebrowser.sh
 ```
 
@@ -180,7 +208,13 @@ Spawns a highly configurable FileBrowser container allowing full-filesystem web 
 An automated setup utility for the privacy-focused, self-hosted note-taking application SiYuan. It sets up persistent directories and maps local UID/GID parameters to avoid file lock issues inside Docker.
 
 ### How to Use
+**One-Click Run (Recommended):**
 ```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_siyyuan.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_siyyuan.sh
 ./setup_docker_siyyuan.sh
 ```
 
@@ -201,7 +235,13 @@ An automated setup utility for the privacy-focused, self-hosted note-taking appl
 Spawns a Dozzle container to provide a beautiful, real-time web-based dashboard for viewing logs of all your running Docker containers.
 
 ### How to Use
+**One-Click Run (Recommended):**
 ```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_dozzle.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_dozzle.sh
 ./setup_docker_dozzle.sh
 ```
 
@@ -220,7 +260,13 @@ Spawns a Dozzle container to provide a beautiful, real-time web-based dashboard 
 Deploys a Postgres 16 database running on Alpine Linux alongside a PostgREST container. PostgREST automatically exposes your database tables, views, and functions directly as a RESTful web API. The setup script automatically creates the anonymous access database role (`anon`) and grants proper schema privileges to make configuration completely seamless.
 
 ### How to Use
+**One-Click Run (Recommended):**
 ```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_postgres_postgrest.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_postgres_postgrest.sh
 ./setup_docker_postgres_postgrest.sh
 ```
 
