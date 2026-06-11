@@ -126,6 +126,9 @@ Generates and deploys a standalone Docker container running Cloudflare's `cloudf
 ### Description
 A template scaffolder that sets up folders, generates modern placeholder web pages, and writes a customized `docker-compose.yml` to serve a digital business card, a personal portfolio site, or both, running on Nginx.
 
+> [!TIP]
+> You can easily design a beautiful, responsive digital business card using **[EnBizCard](https://enbizcard.vishnuraghav.com/)**. Once generated and downloaded, extract and move the files directly into your project's `./biz` folder to replace the placeholder page!
+
 ### How to Use
 ```bash
 ./setup_docker_website_buisnessCard.sh
