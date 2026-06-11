@@ -35,7 +35,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
 * 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
-* 📊 [System Information & Real-Time Monitor (`system_monitor.sh`)](#system-monitor-setup)
+* 📊 [System Information & Real-Time Monitor (system_monitor.sh)](#system-monitor-setup)
 
 ---
 
@@ -284,7 +284,7 @@ chmod +x setup_docker_postgres_postgrest.sh
 ---
 
 <a id="system-monitor-setup"></a>
-## 📊 System Information & Real-Time Monitor (`system_monitor.sh`)
+## 📊 System Information & Real-Time Monitor (system_monitor.sh)
 
 ### Description
 An interactive, menu-driven script that provides general system diagnostics (OS, Kernel, CPU model, RAM usage, storage, network interfaces, and public IP address), with the option to launch or install `btop`, a gorgeous real-time command-line resource monitor showing active CPU speeds, memory components, disk partitions, and running processes. The script automatically detects your system configuration and package manager (apt, dnf, pacman, snap) to install `btop` if it is missing, falling back to compile-free static musl release binaries if required.
