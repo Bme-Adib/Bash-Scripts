@@ -8,6 +8,9 @@
 
 Welcome! This repository contains a collection of interactive, robust, and automated bash helper scripts designed by **[Adib Builds](https://adibbuilds.com)**. These scripts aim to simplify home server management, automate initial Ubuntu Server hardening, and launch essential Docker applications and containers with zero hassle.
 
+> [!TIP]
+> You can also check the **[Adib Builds Downloads Page](https://adibbuilds.com/downloads)** to find all of these scripts with one-click copy options, making it incredibly easy to copy and run them directly on your server!
+
 ---
 
 ## 🌐 Connect With Adib Builds
@@ -25,11 +28,11 @@ Stay updated with new guides, tutorials, and scripts:
 Click any of the scripts below to jump directly to its description, installation instructions, and configuration options:
 
 * 🖥️ [Ubuntu Server Initial Setup (`server_setup.sh`)](#-ubuntu-server-initial-setup-server_setupsh)
-* 🐳 [Docker & Compose Native Installer (`install_docker.sh`)](#-docker--compose-native-installer-install_dockersh)
+* 🐳 [Docker & Compose Native Installer (`setup_docker.sh`)](#-docker--compose-native-installer-setup_dockersh)
 * ☁️ [Cloudflare Tunnel Auto-Setup (`setup_docker_cloudflare.sh`)](#-cloudflare-tunnel-auto-setup-setup_docker_cloudflaresh)
-* 📇 [Nginx Portfolio & Business Card Creator (`createPortfolioBizcard.sh`)](#-nginx-portfolio--business-card-creator-createportfoliobizcardsh)
+* 📇 [Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)](#-nginx-portfolio--business-card-creator-setup_docker_website_buisnesscardsh)
 * 📂 [FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)](#-filebrowser-quantum-container-setup-setup_docker_filebrowsersh)
-* 📓 [SiYuan Note Private Workspace Installer (`siyyuan_install_docker.sh`)](#-siyuan-note-private-workspace-installer-siyyuan_install_dockersh)
+* 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#-siyuan-note-private-workspace-installer-setup_docker_siyyuansh)
 
 ---
 
@@ -47,7 +50,7 @@ Click any of the scripts below to jump directly to its description, installation
 3. **Execute:**
    ```bash
    ./<script_name>.sh
-   # (Note: server_setup.sh and install_docker.sh require sudo)
+   # (Note: server_setup.sh and setup_docker.sh require sudo)
    ```
 
 ---
@@ -77,7 +80,7 @@ The script provides a choice menu with the following operations:
 
 ---
 
-## 🐳 Docker & Compose Native Installer (`install_docker.sh`)
+## 🐳 Docker & Compose Native Installer (`setup_docker.sh`)
 
 ### Description
 Installs the official Docker CE Engine, Docker CE CLI, Containerd, Docker Buildx, and Docker Compose V2 plugin natively. It handles adding keyrings, GPG keys, and apt repositories for Debian/Ubuntu based systems (with pop/mint mapping safety). If run on unsupported architectures/distributions, it automatically falls back to Docker's official convenience installation script.
@@ -85,7 +88,7 @@ Installs the official Docker CE Engine, Docker CE CLI, Containerd, Docker Buildx
 ### How to Use
 Run with root permissions:
 ```bash
-sudo ./install_docker.sh
+sudo ./setup_docker.sh
 ```
 
 ### Options & Inputs Inside the Script
@@ -113,14 +116,14 @@ Generates and deploys a standalone Docker container running Cloudflare's `cloudf
 
 ---
 
-## 📇 Nginx Portfolio & Business Card Creator (`createPortfolioBizcard.sh`)
+## 📇 Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)
 
 ### Description
 A template scaffolder that sets up folders, generates modern placeholder web pages, and writes a customized `docker-compose.yml` to serve a digital business card, a personal portfolio site, or both, running on Nginx.
 
 ### How to Use
 ```bash
-./createPortfolioBizcard.sh
+./setup_docker_website_buisnessCard.sh
 ```
 
 ### Options & Inputs Inside the Script
@@ -154,14 +157,14 @@ Spawns a highly configurable FileBrowser container allowing full-filesystem web 
 
 ---
 
-## 📓 SiYuan Note Private Workspace Installer (`siyyuan_install_docker.sh`)
+## 📓 SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)
 
 ### Description
 An automated setup utility for the privacy-focused, self-hosted note-taking application SiYuan. It sets up persistent directories and maps local UID/GID parameters to avoid file lock issues inside Docker.
 
 ### How to Use
 ```bash
-./siyyuan_install_docker.sh
+./setup_docker_siyyuan.sh
 ```
 
 ### Options & Inputs Inside the Script
