@@ -379,11 +379,13 @@ chmod +x setup_fish_starship.sh
 
 ### Options & Inputs Inside the Script
 * **OS Auto-Detection**: Installs packages natively using `apt`, `dnf`, `pacman`, or `apk`.
+* **Server Identity**: Prompts for a custom server name to display in the Starship prompt and Fish terminal greeting.
+* **Custom Welcome Banner**: Prompts for custom ASCII art (with a link to an ASCII text generator) to save inside `~/.config/fish/ascii_art.txt`.
 * **Custom Configuration Generation**:
-  * Generates custom prompt configurations (`~/.config/starship.toml`).
+  * Generates custom prompt configurations (`~/.config/starship.toml`) overriding the hostname with the custom server name.
   * Installs aliases (`ls` mapped to `eza` with file icons and git markers).
-  * Replicates the "Ghannam Server" ASCII splash art inside `~/.config/fish/ascii_art.txt`.
   * Replicates the custom `sysstat` telemetry system check.
+  * Safely overwrites old configurations on successive executions.
 * **Default Shell Prompt**: Choice to set Fish shell as the system's default login shell (`chsh` configuration).
 
 ---

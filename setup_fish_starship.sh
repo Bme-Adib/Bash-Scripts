@@ -20,6 +20,15 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 
+# --- Smart Cleanup Trap ---
+TEMP_ART_FILE=""
+cleanup() {
+    if [ -n "${TEMP_ART_FILE:-}" ] && [ -f "$TEMP_ART_FILE" ]; then
+        rm -f "$TEMP_ART_FILE"
+    fi
+}
+trap cleanup EXIT
+
 # --- Header ---
 echo -e "${GREEN}============================================================${NC}"
 echo -e "${GREEN}  Bash Script By Adib Builds (https://github.com/Bme-Adib)  ${NC}"
@@ -187,7 +196,7 @@ format = "[$user]($style) "
 
 [hostname]
 ssh_only = false
-format = "[$hostname](bold yellow) "
+format = "[__SERVER_NAME__](bold yellow) "
 
 [directory]
 style = "bold cyan"
@@ -252,6 +261,8 @@ format = "via [$symbol$context]($style) "
 ruby = "#E0115F"
 emerald = "#50C878"
 EOF
+    # Perform custom server name mapping in starship config
+    sed -i "s|__SERVER_NAME__|${SERVER_NAME}|g" "$HOME/.config/starship.toml"
     log_success "Created starship settings: $HOME/.config/starship.toml"
 
     # Write config.fish
@@ -275,22 +286,13 @@ EOF
     log_success "Created fish configuration: $HOME/.config/fish/config.fish"
 
     # Write ascii_art.txt
-    cat << 'EOF' > "$HOME/.config/fish/ascii_art.txt"
- _______           _______  _        _        _______  _______        _______  _______  _______           _______  _______ 
-(  ____ \|\     /|(  ___  )( (    /|( (    /|(  ___  )(       )      (  ____ \(  ____ \(  ____ )|\     /|(  ____ \(  ____ )
-| (    \/| )   ( || (   ) ||  \  ( ||  \  ( || (   ) || () () |      | (    \/| (    \/| (    )|| )   ( || (    \/| (    )|
-| |      | (___) || (___) ||   \ | ||   \ | || (___) || || || |      | (_____ | (__    | (____)|| |   | || (__    | (____)|
-| | ____ |  ___  ||  ___  || (\ \) || (\ \) ||  ___  || |(_)| |      (_____  )|  __)   |     __)( (   ) )|  __)   |     __)
-| | \_  )| (   ) || (   ) || | \   || | \   || (   ) || |   | |            ) || (      | (\ (    \ \_/ / | (      | (\ (   
-| (___) || )   ( || )   ( || )  \  || )  \  || )  \  || )   ( |      /\____) || (____/\| ) \ \__  \   /  | (____/\| ) \ \__
-(_______)|/     \||/     \||/    )_)|/    )_)|/     \||/     \|      \_______)(_______/|/   \__/   \_/   (_______/|/   \__/
-EOF
+    cp "$TEMP_ART_FILE" "$HOME/.config/fish/ascii_art.txt"
     log_success "Created welcome artwork: $HOME/.config/fish/ascii_art.txt"
 
     # Write fish_greeting.fish
     cat << 'EOF' > "$HOME/.config/fish/functions/fish_greeting.fish"
 function fish_greeting
-    cat ~/.config/fish/ascii_art.txt 2>/dev/null || echo "Welcome back, Mr. Ghannam"
+    cat ~/.config/fish/ascii_art.txt 2>/dev/null
 end
 EOF
     log_success "Created fish greeting: $HOME/.config/fish/functions/fish_greeting.fish"
@@ -370,6 +372,32 @@ set_default_shell() {
 
 # Run replication
 detect_os
+
+# 1. Configure Server Identity
+echo -e "\n${BLUE}>>> Step 1: Configure Server Identity${NC}"
+read -rp "Enter the name of this server [MyServer]: " SERVER_NAME
+SERVER_NAME=${SERVER_NAME:-MyServer}
+
+# 2. Configure Welcome Banner (ASCII Art)
+echo -e "\n${BLUE}>>> Step 2: Configure Welcome Banner (ASCII Art)${NC}"
+echo -e "You can create custom ASCII Art at: ${YELLOW}https://patorjk.com/software/taag/#p=display&f=Coder+Mini&t=Adib+Builds&x=none&v=4&h=4&w=80&we=false${NC}"
+echo -e "Please paste your ASCII Art below, then press ${GREEN}Ctrl+D${NC} on a new line to finish."
+echo -e "(Or leave empty to use a simple text welcome banner)"
+
+# We will read it directly into a temp file to avoid escaping and shell variable expansion issues
+TEMP_ART_FILE=$(mktemp)
+cat > "$TEMP_ART_FILE"
+
+# Check if the user pasted anything substantial
+if ! grep -q '[^[:space:]]' "$TEMP_ART_FILE"; then
+    # Write default banner
+    cat << EOF > "$TEMP_ART_FILE"
+ ==========================================
+   Welcome to ${SERVER_NAME}
+ ==========================================
+EOF
+fi
+
 if ! command -v fish >/dev/null 2>&1; then
     install_fish
 else
