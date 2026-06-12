@@ -36,6 +36,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
 * 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
 * 🐳 [Ubuntu Playground Container Setup (`setup_docker_ubuntu.sh`)](#ubuntu-setup)
+* 🐚 [Fish Shell & Starship Prompt Replicator (`setup_fish_starship.sh`)](#fish-setup)
 * 📊 [System Information & Real-Time Monitor (system_monitor.sh)](#system-monitor-setup)
 
 ---
@@ -356,6 +357,34 @@ chmod +x system_monitor.sh
   * `7) Show Hardware Summary (Detailed)`: Sudo required.
   * `8) Launch Real-Time Resource Monitor (btop)`: Automatically checks for or installs `btop` and runs it.
   * `0) Exit Utility`
+
+---
+
+<a id="fish-setup"></a>
+## 🐚 Fish Shell & Starship Prompt Replicator (`setup_fish_starship.sh`)
+
+### Description
+An installer script that replicates the custom Fish shell environment and Starship prompt theme on any fresh server. It automatically checks for and installs Fish shell, installs/updates the Starship prompt binary, downloads/compiles `eza` (modern replacement for `ls` command), creates your custom workspace welcome art banner, and sets up your custom `sysstat` telemetry tool.
+
+### How to Use
+**One-Click Run (Recommended):**
+```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_fish_starship.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_fish_starship.sh
+./setup_fish_starship.sh
+```
+
+### Options & Inputs Inside the Script
+* **OS Auto-Detection**: Installs packages natively using `apt`, `dnf`, `pacman`, or `apk`.
+* **Custom Configuration Generation**:
+  * Generates custom prompt configurations (`~/.config/starship.toml`).
+  * Installs aliases (`ls` mapped to `eza` with file icons and git markers).
+  * Replicates the "Ghannam Server" ASCII splash art inside `~/.config/fish/ascii_art.txt`.
+  * Replicates the custom `sysstat` telemetry system check.
+* **Default Shell Prompt**: Choice to set Fish shell as the system's default login shell (`chsh` configuration).
 
 ---
 
