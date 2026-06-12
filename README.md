@@ -35,6 +35,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
 * 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
+* 🐳 [Ubuntu Playground Container Setup (`setup_docker_ubuntu.sh`)](#ubuntu-setup)
 * 📊 [System Information & Real-Time Monitor (system_monitor.sh)](#system-monitor-setup)
 
 ---
@@ -280,6 +281,39 @@ chmod +x setup_docker_postgres_postgrest.sh
 * **Cloudflare Subdomain**: The subdomain (e.g., `api.example.com`) to route REST API traffic.
 * **Cloudflare Network**: Docker network name (default `proxy-net`). Offers to create if missing.
 * **Deploy Confirmation**: Reviews settings and launches both Postgres and PostgREST containers.
+
+---
+
+<a id="ubuntu-setup"></a>
+## 🐳 Ubuntu Playground Container Setup (`setup_docker_ubuntu.sh`)
+
+### Description
+An interactive utility that compiles a custom `Dockerfile` and `docker-compose.yml` to deploy an isolated Ubuntu sandbox container. Supports choosing specific Ubuntu versions, setting up SSH key/password access (with root or standard `developer` users), mounting persistent directories from the host, and setting CPU and memory resource limits.
+
+### How to Use
+**One-Click Run (Recommended):**
+```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_ubuntu.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_ubuntu.sh
+./setup_docker_ubuntu.sh
+```
+
+### Options & Inputs Inside the Script
+* **Ubuntu Version**: Choose between `latest`, `24.04`, `22.04`, or `20.04`.
+* **Container Name**: Define a custom name for your sandbox (defaults to `ubuntu-playground`).
+* **SSH Access**: Toggle SSH server setup. If enabled:
+  * Specify a host SSH port to map (defaults to `2222`).
+  * Choose to login as `root` or a non-root `user` (with passwordless sudo).
+  * Configure custom login credentials securely.
+* **Volume Mounts**: Option to mount host directories for persistent workspace files.
+* **Pre-installed Packages**: Customize apt packages to automatically pre-install on build (defaults to `curl git wget vim sudo`).
+* **Docker Integration**: Toggle Docker-in-Docker / CLI execution capability. Mounts the host Docker socket (`/var/run/docker.sock`) and automatically pre-installs the `docker.io` engine client (automatically adding your standard SSH user to the container's `docker` group).
+* **Docker Network**: Specify a docker network (defaults to `bridge`).
+* **Resource Limits**: Set CPU cores limit (e.g. `1.5`) and memory limits (e.g. `1g`, `512m`).
+* **Deploy Confirmation**: Reviews settings and builds/deploys the container using docker compose.
 
 ---
 
