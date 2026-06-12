@@ -292,6 +292,56 @@ EOF
     # Write fish_greeting.fish
     cat << 'EOF' > "$HOME/.config/fish/functions/fish_greeting.fish"
 function fish_greeting
+    clear
+    
+    # 1. Print Host System Statistics
+    set_color cyan
+    echo "=== Host System Statistics ==="
+    set_color normal
+    
+    # OS Name
+    if test -f /etc/os-release
+        set -l os_name (grep -E "^PRETTY_NAME=" /etc/os-release | cut -d'"' -f2)
+        if test -z "$os_name"
+            set os_name (grep -E "^NAME=" /etc/os-release | cut -d'"' -f2)
+        end
+        echo "OS:          $os_name"
+    end
+    
+    # Kernel
+    echo "Kernel:      "(uname -r)
+    
+    # CPU Model
+    if test -f /proc/cpuinfo
+        set -l cpu_model (grep -m1 "model name" /proc/cpuinfo | cut -d: -f2- | string trim)
+        echo "CPU Model:   $cpu_model"
+    end
+    
+    # BIOS
+    set -l bios_vendor (cat /sys/class/dmi/id/bios_vendor 2>/dev/null; or echo "")
+    set -l bios_version (cat /sys/class/dmi/id/bios_version 2>/dev/null; or echo "")
+    if test -n "$bios_vendor"; or test -n "$bios_version"
+        echo "BIOS:        $bios_vendor $bios_version"
+    end
+    
+    # RAM
+    if command -sq free
+        set -l total_ram (free -h | awk '/^Mem:/ {print $2}')
+        set -l free_ram (free -h | awk '/^Mem:/ {print $4}')
+        echo "RAM (Total): $total_ram (Free: $free_ram)"
+    end
+    
+    # Disk Storage
+    echo "Disk Storage:"
+    df -h | grep -E '^/dev/' | while read -l dev size used avail percent mount
+        echo "  - $dev ($mount): Total: $size | Free: $avail (Used: $percent)"
+    end
+    
+    # Two empty lines
+    echo ""
+    echo ""
+    
+    # Print the ASCII welcome art
     cat ~/.config/fish/ascii_art.txt 2>/dev/null
 end
 EOF
