@@ -301,6 +301,17 @@ chmod +x setup_docker_ubuntu.sh
 ./setup_docker_ubuntu.sh
 ```
 
+> [!TIP]
+> **Troubleshooting SSH Host Key Conflict:**
+> If you rebuild or replace the container and get a "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!" error, run the following command on your machine (where you are initiating the SSH connection) to clear the old key:
+> ```bash
+> ssh-keygen -R '[localhost]:2222'
+> ```
+> Once you run that, try to SSH again:
+> ```bash
+> ssh root@localhost -p 2222
+> ```
+
 ### Options & Inputs Inside the Script
 * **Ubuntu Version**: Choose between `latest`, `24.04`, `22.04`, or `20.04`.
 * **Container Name**: Define a custom name for your sandbox (defaults to `ubuntu-playground`).

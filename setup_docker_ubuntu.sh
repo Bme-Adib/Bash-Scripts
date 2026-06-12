@@ -269,8 +269,10 @@ EOF
 if [[ "$ENABLE_DOCKER" =~ ^[Yy]$ ]]; then
     cat <<EOF >> "${TARGET_DIR}/Dockerfile"
 
-# Install Docker CLI
-RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
+# Install Docker CLI and Docker Compose
+RUN apt-get update && \\
+    (apt-get install -y docker.io docker-compose-v2 || apt-get install -y docker.io docker-compose) && \\
+    rm -rf /var/lib/apt/lists/*
 EOF
 fi
 
