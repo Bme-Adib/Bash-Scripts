@@ -82,8 +82,8 @@ while [[ ! "$CONTAINER_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; do
 done
 
 echo -e "\n${BLUE}>>> Step 2: Configure Access Method${NC}"
-read -rp "Would you like to enable SSH access in this container? (y/n) [n]: " ENABLE_SSH
-ENABLE_SSH=${ENABLE_SSH:-n}
+read -rp "Would you like to enable SSH access in this container? (y/n) [y]: " ENABLE_SSH
+ENABLE_SSH=${ENABLE_SSH:-y}
 
 SSH_PORT="2222"
 SSH_USER_TYPE="root"
@@ -403,6 +403,11 @@ if [[ "$DEPLOY_CONFIRM" =~ ^[Yy]$ ]]; then
     log_info "Building and starting container..."
     (cd "$TARGET_DIR" && $DOCKER_COMPOSE_CMD up -d --build)
     log_success "Ubuntu Container '${CONTAINER_NAME}' is now running!"
+    
+    if [[ "$ENABLE_SSH" =~ ^[Yy]$ ]]; then
+        log_info "Clearing host SSH key registry for port ${SSH_PORT} to prevent host key verification conflicts..."
+        ssh-keygen -R "[localhost]:${SSH_PORT}" >/dev/null 2>&1 || true
+    fi
 else
     log_warning "Deployment skipped. You can manually launch it later."
 fi
@@ -421,7 +426,8 @@ if [[ "$ENABLE_SSH" =~ ^[Yy]$ ]]; then
     echo -e "Host SSH Port:    ${YELLOW}${SSH_PORT}${NC}"
     echo -e "SSH User:         ${GREEN}${SSH_USER}${NC}"
     echo -e "SSH Password:     ${GREEN}${SSH_PASS}${NC}"
-    echo -e "SSH Command:      ${YELLOW}ssh ${SSH_USER}@localhost -p ${SSH_PORT}${NC}"
+    echo -e "\nOnce you run that, try to SSH again:\n"
+    echo -e "  ${YELLOW}ssh ${SSH_USER}@localhost -p ${SSH_PORT}${NC}"
 else
     echo -e "SSH Access:       ${RED}Disabled${NC}"
     echo -e "Shell Access:     ${YELLOW}docker exec -it ${CONTAINER_NAME} bash${NC}"
