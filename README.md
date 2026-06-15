@@ -31,6 +31,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 🐳 [Docker Manager & Installer (`manage_docker.sh`)](#docker-manager)
 * ☁️ [Cloudflare Tunnel Auto-Setup (`setup_docker_cloudflare.sh`)](#cloudflare-tunnel)
 * 📇 [Nginx Portfolio & Business Card Creator (`setup_docker_website_buisnessCard.sh`)](#portfolio-bizcard)
+* 🔥 [Flame Startpage Dashboard Creator (`setup_docker_flame.sh`)](#flame-setup)
 * 📂 [FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)](#filebrowser)
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
@@ -176,6 +177,32 @@ chmod +x setup_docker_website_buisnessCard.sh
 * **Port exposure**: Enter custom host ports for binding (defaults to `8082` for biz card, `8083` for website). Checks if ports are already in use on the host system.
 * **Docker Network**: Connects containers to a specified docker network (e.g. `proxy-net`). Inspects/creates it if it does not exist.
 * **Deploy Confirmation**: Prints the finalized compose file configuration and prompts to launch the Nginx services.
+
+---
+
+<a id="flame-setup"></a>
+## 🔥 Flame Startpage Dashboard Creator (`setup_docker_flame.sh`)
+
+### Description
+Spawns a self-hosted Flame dashboard container. Flame is a lightweight startpage for your server that lets you organize applications, bookmarks, and search shortcuts. The script supports setting up a master password for editing configurations, optional Docker socket integration to auto-discover running containers, port exposure toggles, and Cloudflare external network connection options.
+
+### How to Use
+**One-Click Run (Recommended):**
+```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_flame.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_flame.sh
+./setup_docker_flame.sh
+```
+
+### Options & Inputs Inside the Script
+* **Settings Password**: Enter the password required to edit settings in the Flame Web UI (automatically generates a secure random 16-character password by default).
+* **Docker Integration**: Toggle whether to mount `/var/run/docker.sock` to allow Flame to automatically read container names/labels and add them as dashboard items.
+* **Port Exposure**: Option to bind the Flame port (`5005`) to the host. Disabled by default to align with secure tunnel setups.
+* **Cloudflare External Network**: Option to connect Flame to a shared proxy network (default `proxy-net`) and specify the external routing URL.
+* **Deploy Confirmation**: Reviews the generated `docker-compose.yml` and launches the dashboard service immediately.
 
 ---
 
