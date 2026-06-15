@@ -315,7 +315,7 @@ services:
       INITIAL_API_KEY: \${INITIAL_API_KEY}
       DB_DRIVER: \${DB_DRIVER}
     volumes:
-      - ./shlink-data:/etc/shlink/data
+      - shlink-data:/etc/shlink/data
     ${SERVER_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
 
@@ -329,6 +329,9 @@ ${SERVICE_NETWORKS}
       SHLINK_SERVER_NAME: \${SHLINK_SERVER_NAME}
     ${UI_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
+
+volumes:
+  shlink-data:
 
 ${NETWORKS_BLOCK}
 EOF
@@ -368,7 +371,7 @@ services:
       DB_USER: \${DB_USER}
       DB_PASSWORD: \${DB_PASSWORD}
     volumes:
-      - ./shlink-data:/etc/shlink/data
+      - shlink-data:/etc/shlink/data
     ${SERVER_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
 
@@ -382,6 +385,9 @@ ${SERVICE_NETWORKS}
       SHLINK_SERVER_NAME: \${SHLINK_SERVER_NAME}
     ${UI_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
+
+volumes:
+  shlink-data:
 
 ${NETWORKS_BLOCK}
 EOF
