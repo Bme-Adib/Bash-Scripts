@@ -59,9 +59,35 @@ fi
 log_success "Docker & Docker Compose detected."
 
 # 2. Gather Configuration Settings
+TARGET_DIR="$(pwd)/shlink-deployment"
+
+EXISTING_DOMAIN=""
+EXISTING_API_KEY=""
+EXISTING_GEOLITE=""
+
+# 1. Try to read active API key from running container if it exists
+if docker ps --format '{{.Names}}' | grep -q "^shlink-server$"; then
+    ACTIVE_KEY=$(docker exec shlink-server shlink api-key:list 2>/dev/null | grep -oE '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' | head -n 1 || true)
+    if [ -n "$ACTIVE_KEY" ]; then
+        EXISTING_API_KEY="$ACTIVE_KEY"
+    fi
+fi
+
+# 2. If not found in running container, try to read from existing .env
+if [ -z "$EXISTING_API_KEY" ] && [ -f "${TARGET_DIR}/.env" ]; then
+    EXISTING_API_KEY=$(grep -E "^INITIAL_API_KEY=" "${TARGET_DIR}/.env" | cut -d'=' -f2- || true)
+fi
+
+# 3. Read other defaults if .env exists
+if [ -f "${TARGET_DIR}/.env" ]; then
+    EXISTING_DOMAIN=$(grep -E "^DEFAULT_DOMAIN=" "${TARGET_DIR}/.env" | cut -d'=' -f2- || true)
+    EXISTING_GEOLITE=$(grep -E "^GEOLITE_LICENSE_KEY=" "${TARGET_DIR}/.env" | cut -d'=' -f2- || true)
+fi
+
 echo -e "\n${BLUE}>>> Step 1: Shlink Server General Settings${NC}"
-read -rp "Enter Default Domain for short URLs [s.example.com]: " DEFAULT_DOMAIN
-DEFAULT_DOMAIN=${DEFAULT_DOMAIN:-s.example.com}
+DEFAULT_DOMAIN_SUGGESTION=${EXISTING_DOMAIN:-s.example.com}
+read -rp "Enter Default Domain for short URLs [$DEFAULT_DOMAIN_SUGGESTION]: " DEFAULT_DOMAIN
+DEFAULT_DOMAIN=${DEFAULT_DOMAIN:-$DEFAULT_DOMAIN_SUGGESTION}
 
 read -rp "Is HTTPS enabled for Shlink Server? (y/n) [y]: " HTTPS_INPUT
 HTTPS_INPUT=${HTTPS_INPUT:-y}
@@ -73,10 +99,20 @@ else
     SCHEME="http"
 fi
 
-read -rp "Enter GeoLite2 License Key (optional, press Enter to skip): " GEOLITE_LICENSE_KEY
-GEOLITE_LICENSE_KEY=${GEOLITE_LICENSE_KEY:-}
+GEOLITE_SUGGESTION=${EXISTING_GEOLITE:-}
+if [ -n "$GEOLITE_SUGGESTION" ]; then
+    read -rp "Enter GeoLite2 License Key (optional) [$GEOLITE_SUGGESTION]: " GEOLITE_LICENSE_KEY
+    GEOLITE_LICENSE_KEY=${GEOLITE_LICENSE_KEY:-$GEOLITE_SUGGESTION}
+else
+    read -rp "Enter GeoLite2 License Key (optional, press Enter to skip): " GEOLITE_LICENSE_KEY
+    GEOLITE_LICENSE_KEY=${GEOLITE_LICENSE_KEY:-}
+fi
 
-RANDOM_API_KEY=$(tr -dc 'A-Za-z0-9' < /dev/urandom 2>/dev/null | head -c 32 || echo "shlink_secure_api_key_32_chars_long")
+if [ -n "$EXISTING_API_KEY" ]; then
+    RANDOM_API_KEY="$EXISTING_API_KEY"
+else
+    RANDOM_API_KEY=$(tr -dc 'A-Za-z0-9' < /dev/urandom 2>/dev/null | head -c 32 || echo "shlink_secure_api_key_32_chars_long")
+fi
 read -rp "Enter Initial API Key [$RANDOM_API_KEY]: " INITIAL_API_KEY
 INITIAL_API_KEY=${INITIAL_API_KEY:-$RANDOM_API_KEY}
 
@@ -197,8 +233,8 @@ read -rp "Enter Shlink Web UI Access URL [$SUGGESTED_UI_URL]: " SHLINK_UI_URL
 SHLINK_UI_URL=${SHLINK_UI_URL:-$SUGGESTED_UI_URL}
 
 echo -e "\n${BLUE}>>> Step 5: Network Settings${NC}"
-read -rp "Do you want to connect to an external Docker network (e.g. Cloudflare proxy-net)? (y/n) [n]: " USE_EXT_NET
-USE_EXT_NET=${USE_EXT_NET:-n}
+read -rp "Do you want to connect to an external Docker network (e.g. Cloudflare proxy-net)? (y/n) [y]: " USE_EXT_NET
+USE_EXT_NET=${USE_EXT_NET:-y}
 
 CLOUDFLARE_NET=""
 if [[ "$USE_EXT_NET" =~ ^[Yy]$ ]]; then

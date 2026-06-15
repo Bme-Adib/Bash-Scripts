@@ -314,6 +314,18 @@ chmod +x setup_docker_shlink.sh
 * **Docker Network**: Connects containers to a specified external docker network (e.g., `proxy-net` for Cloudflare Tunnel routing).
 * **Deploy Confirmation**: Reviews the generated `docker-compose.yml` and launches the services immediately.
 
+> [!IMPORTANT]
+> **Troubleshooting "Something went wrong while loading short URLs":**
+> If you get this error in the Web Client, it typically means there is an API Key mismatch between the browser cache/settings and your Shlink Server (often caused by running the setup script again with a new generated key).
+> To fix this:
+> 1. Click on the top-right **Servers** menu -> **Manage servers**.
+> 2. Click the edit icon on your pre-configured server.
+> 3. Retrieve the active API key by running this command on your host:
+>    ```bash
+>    docker exec -it shlink-server shlink api-key:list
+>    ```
+> 4. Copy the API key, paste it into the edit server form, and save.
+
 ---
 
 <a id="ubuntu-setup"></a>
