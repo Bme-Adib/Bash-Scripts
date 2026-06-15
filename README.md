@@ -308,9 +308,9 @@ chmod +x setup_docker_shlink.sh
 * **HTTPS Toggle**: Choose whether to serve short links over HTTPS (sets `IS_HTTPS_ENABLED` environment variable).
 * **GeoLite2 License Key**: Option to provide your MaxMind license key to enable visit geolocation.
 * **Initial API Key**: Automatically generates a secure 32-character API key or lets you define one.
-* **Port exposure**: Enter host ports for Shlink Server (defaults to `8080`) and Shlink Web Client UI (defaults to `8000`). Checks if ports are already in use.
+* **Port exposure**: Option to expose Shlink Server (default `8080`) and/or Shlink Web UI (default `8000`) ports to the host system. Expositions are disabled by default (useful when proxying via tunnels).
 * **Database Selection**: Select SQLite (embedded) or PostgreSQL (deploys a separate `postgres:16-alpine` database service with automated credentials).
-* **Web Client Pre-configuration**: Customizes the Shlink server connection URL and display name so the web client UI automatically connects out-of-the-box.
+* **Web Client Pre-configuration**: Customizes the Shlink server connection URL, display name, and the Shlink Web UI Access URL so the web client UI automatically connects out-of-the-box.
 * **Docker Network**: Connects containers to a specified external docker network (e.g., `proxy-net` for Cloudflare Tunnel routing).
 * **Deploy Confirmation**: Reviews the generated `docker-compose.yml` and launches the services immediately.
 

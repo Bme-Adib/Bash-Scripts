@@ -81,21 +81,44 @@ read -rp "Enter Initial API Key [$RANDOM_API_KEY]: " INITIAL_API_KEY
 INITIAL_API_KEY=${INITIAL_API_KEY:-$RANDOM_API_KEY}
 
 echo -e "\n${BLUE}>>> Step 2: Port Exposure${NC}"
-while true; do
-    read -rp "Enter host port for Shlink Server [8080]: " SHLINK_PORT
-    SHLINK_PORT=${SHLINK_PORT:-8080}
-    if validate_port "$SHLINK_PORT"; then
-        break
-    fi
-done
 
-while true; do
-    read -rp "Enter host port for Shlink Web UI [8000]: " SHLINK_UI_PORT
-    SHLINK_UI_PORT=${SHLINK_UI_PORT:-8000}
-    if validate_port "$SHLINK_UI_PORT"; then
-        break
-    fi
-done
+# Shlink Server Port
+read -rp "Expose Shlink Server port (8080) to the host system? (y/n) [n]: " EXPOSE_SERVER
+EXPOSE_SERVER=${EXPOSE_SERVER:-n}
+SERVER_PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
+    # ports:
+    #   - 8080:8080"
+SERVER_HOST_PORT="N/A"
+if [[ "$EXPOSE_SERVER" =~ ^[Yy]$ ]]; then
+    while true; do
+        read -rp "Enter host port for Shlink Server [8080]: " SERVER_HOST_PORT
+        SERVER_HOST_PORT=${SERVER_HOST_PORT:-8080}
+        if validate_port "$SERVER_HOST_PORT"; then
+            break
+        fi
+    done
+    SERVER_PORT_MAPPING_BLOCK="ports:
+      - ${SERVER_HOST_PORT}:8080"
+fi
+
+# Shlink Web UI Port
+read -rp "Expose Shlink Web UI port (8000) to the host system? (y/n) [n]: " EXPOSE_UI
+EXPOSE_UI=${EXPOSE_UI:-n}
+UI_PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
+    # ports:
+    #   - 8000:8080"
+UI_HOST_PORT="N/A"
+if [[ "$EXPOSE_UI" =~ ^[Yy]$ ]]; then
+    while true; do
+        read -rp "Enter host port for Shlink Web UI [8000]: " UI_HOST_PORT
+        UI_HOST_PORT=${UI_HOST_PORT:-8000}
+        if validate_port "$UI_HOST_PORT"; then
+            break
+        fi
+    done
+    UI_PORT_MAPPING_BLOCK="ports:
+      - ${UI_HOST_PORT}:8080"
+fi
 
 echo -e "\n${BLUE}>>> Step 3: Database Configuration${NC}"
 echo -e "Shlink supports SQLite (embedded, easy) or PostgreSQL (robust, separate container)."
@@ -145,13 +168,33 @@ echo -e "The Web Client runs in the user's browser, so it needs to connect to th
 echo -e "via a URL that is publicly or locally accessible by the browser."
 SUGGESTED_SERVER_URL="${SCHEME}://${DEFAULT_DOMAIN}"
 if [[ "$DEFAULT_DOMAIN" == "localhost" || "$DEFAULT_DOMAIN" == "127.0.0.1" ]]; then
-    SUGGESTED_SERVER_URL="http://localhost:${SHLINK_PORT}"
+    if [ "$SERVER_HOST_PORT" != "N/A" ]; then
+        SUGGESTED_SERVER_URL="http://localhost:${SERVER_HOST_PORT}"
+    else
+        SUGGESTED_SERVER_URL="http://localhost:8080"
+    fi
 fi
 read -rp "Enter Shlink Server URL [$SUGGESTED_SERVER_URL]: " SHLINK_SERVER_URL
 SHLINK_SERVER_URL=${SHLINK_SERVER_URL:-$SUGGESTED_SERVER_URL}
 
 read -rp "Enter Shlink Server Display Name in UI [Local Shlink]: " SHLINK_SERVER_NAME
 SHLINK_SERVER_NAME=${SHLINK_SERVER_NAME:-Local Shlink}
+
+# Suggest UI URL based on DEFAULT_DOMAIN and HTTPS toggle
+SUGGESTED_UI_URL="http://localhost:8000"
+if [ "$UI_HOST_PORT" != "N/A" ]; then
+    SUGGESTED_UI_URL="http://localhost:${UI_HOST_PORT}"
+fi
+if [[ "$DEFAULT_DOMAIN" != "localhost" && "$DEFAULT_DOMAIN" != "127.0.0.1" ]]; then
+    DOMAIN_SUFFIX=$(echo "$DEFAULT_DOMAIN" | sed -E 's/^[^.]+\.//')
+    if [ -n "$DOMAIN_SUFFIX" ] && [[ "$DEFAULT_DOMAIN" =~ \. ]]; then
+        SUGGESTED_UI_URL="${SCHEME}://shlink-ui.${DOMAIN_SUFFIX}"
+    else
+        SUGGESTED_UI_URL="${SCHEME}://shlink-ui.${DEFAULT_DOMAIN}"
+    fi
+fi
+read -rp "Enter Shlink Web UI Access URL [$SUGGESTED_UI_URL]: " SHLINK_UI_URL
+SHLINK_UI_URL=${SHLINK_UI_URL:-$SUGGESTED_UI_URL}
 
 echo -e "\n${BLUE}>>> Step 5: Network Settings${NC}"
 read -rp "Do you want to connect to an external Docker network (e.g. Cloudflare proxy-net)? (y/n) [n]: " USE_EXT_NET
@@ -209,13 +252,11 @@ DEFAULT_DOMAIN=${DEFAULT_DOMAIN}
 IS_HTTPS_ENABLED=${IS_HTTPS_ENABLED}
 GEOLITE_LICENSE_KEY=${GEOLITE_LICENSE_KEY}
 INITIAL_API_KEY=${INITIAL_API_KEY}
-SHLINK_PORT=${SHLINK_PORT}
 
 # Shlink UI Config
 SHLINK_SERVER_URL=${SHLINK_SERVER_URL}
 SHLINK_SERVER_API_KEY=${INITIAL_API_KEY}
 SHLINK_SERVER_NAME=${SHLINK_SERVER_NAME}
-SHLINK_UI_PORT=${SHLINK_UI_PORT}
 EOF
 
 if [ "$DB_DRIVER" == "postgres" ]; then
@@ -275,8 +316,7 @@ services:
       DB_DRIVER: \${DB_DRIVER}
     volumes:
       - ./shlink-data:/etc/shlink/data
-    ports:
-      - "\${SHLINK_PORT}:8080"
+    ${SERVER_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
 
   shlink-web-client:
@@ -287,8 +327,7 @@ ${SERVICE_NETWORKS}
       SHLINK_SERVER_URL: \${SHLINK_SERVER_URL}
       SHLINK_SERVER_API_KEY: \${SHLINK_SERVER_API_KEY}
       SHLINK_SERVER_NAME: \${SHLINK_SERVER_NAME}
-    ports:
-      - "\${SHLINK_UI_PORT}:8080"
+    ${UI_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
 
 ${NETWORKS_BLOCK}
@@ -330,8 +369,7 @@ services:
       DB_PASSWORD: \${DB_PASSWORD}
     volumes:
       - ./shlink-data:/etc/shlink/data
-    ports:
-      - "\${SHLINK_PORT}:8080"
+    ${SERVER_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
 
   shlink-web-client:
@@ -342,8 +380,7 @@ ${SERVICE_NETWORKS}
       SHLINK_SERVER_URL: \${SHLINK_SERVER_URL}
       SHLINK_SERVER_API_KEY: \${SHLINK_SERVER_API_KEY}
       SHLINK_SERVER_NAME: \${SHLINK_SERVER_NAME}
-    ports:
-      - "\${SHLINK_UI_PORT}:8080"
+    ${UI_PORT_MAPPING_BLOCK}
 ${SERVICE_NETWORKS}
 
 ${NETWORKS_BLOCK}
@@ -377,8 +414,17 @@ echo -e "${GREEN}============================================================${N
 echo -e "\n${BLUE}=== Connection Details ===${NC}"
 echo -e "Default Domain:      ${GREEN}${DEFAULT_DOMAIN}${NC}"
 echo -e "Initial API Key:     ${GREEN}${INITIAL_API_KEY}${NC}"
-echo -e "Shlink Server Local: ${YELLOW}http://localhost:${SHLINK_PORT}${NC}"
-echo -e "Shlink Web UI Local: ${YELLOW}http://localhost:${SHLINK_UI_PORT}${NC}"
+if [ "$SERVER_HOST_PORT" != "N/A" ]; then
+    echo -e "Shlink Server Local: ${YELLOW}http://localhost:${SERVER_HOST_PORT}${NC}"
+else
+    echo -e "Shlink Server Local: ${RED}Not Exposed to Host${NC}"
+fi
+if [ "$UI_HOST_PORT" != "N/A" ]; then
+    echo -e "Shlink Web UI Local: ${YELLOW}http://localhost:${UI_HOST_PORT}${NC}"
+else
+    echo -e "Shlink Web UI Local: ${RED}Not Exposed to Host${NC}"
+fi
+echo -e "Shlink Web UI URL:   ${GREEN}${SHLINK_UI_URL}${NC}"
 if [ "$DB_DRIVER" == "postgres" ]; then
     echo -e "PostgreSQL Database: ${GREEN}${DB_NAME}${NC}"
     echo -e "PostgreSQL User:     ${GREEN}${DB_USER}${NC}"
