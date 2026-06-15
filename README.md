@@ -9,7 +9,7 @@
 Welcome! This repository contains a collection of interactive, robust, and automated bash helper scripts designed by **[Adib Builds](https://adibbuilds.com)**. These scripts aim to simplify home server management, automate initial Ubuntu Server hardening, and launch essential Docker applications and containers with zero hassle.
 
 > [!TIP]
-> You can also check the **[Adib Builds Downloads Page](https://adibbuilds.com/downloads)** to find all of these scripts with one-click copy options, making it incredibly easy to copy and run them directly on your server!
+> You can also check the **[Adib Builds Downloads Page](https://adibbuilds.com/downloads)** to find all of these scripts with one-click copy options, making it incredibly easy to copy and run them directly on your server! 
 
 ---
 
@@ -35,6 +35,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
 * 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
+* 🔗 [Shlink URL Shortener & Web UI Setup (`setup_docker_shlink.sh`)](#shlink-setup)
 * 🐳 [Ubuntu Playground Container Setup (`setup_docker_ubuntu.sh`)](#ubuntu-setup)
 * 🐚 [Fish Shell & Starship Prompt Replicator (`setup_fish_starship.sh`)](#fish-setup)
 * 📊 [System Information & Real-Time Monitor (system_monitor.sh)](#system-monitor-setup)
@@ -282,6 +283,36 @@ chmod +x setup_docker_postgres_postgrest.sh
 * **Cloudflare Subdomain**: The subdomain (e.g., `api.example.com`) to route REST API traffic.
 * **Cloudflare Network**: Docker network name (default `proxy-net`). Offers to create if missing.
 * **Deploy Confirmation**: Reviews settings and launches both Postgres and PostgREST containers.
+
+---
+
+<a id="shlink-setup"></a>
+## 🔗 Shlink URL Shortener & Web UI Setup (`setup_docker_shlink.sh`)
+
+### Description
+Spawns a self-hosted Shlink URL shortener instance along with the official Shlink Web Client (UI). The script allows choosing between SQLite (embedded, lightweight) or PostgreSQL (robust, dedicated database container) as the backend database, handles API key generation, pre-configures client-to-server connection details, and supports binding to custom ports or attaching to an external Docker proxy network (e.g., Cloudflare Tunnels).
+
+### How to Use
+**One-Click Run (Recommended):**
+```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_shlink.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_shlink.sh
+./setup_docker_shlink.sh
+```
+
+### Options & Inputs Inside the Script
+* **Default Domain**: Enter the domain name where your short links will be served (defaults to `s.example.com`).
+* **HTTPS Toggle**: Choose whether to serve short links over HTTPS (sets `IS_HTTPS_ENABLED` environment variable).
+* **GeoLite2 License Key**: Option to provide your MaxMind license key to enable visit geolocation.
+* **Initial API Key**: Automatically generates a secure 32-character API key or lets you define one.
+* **Port exposure**: Enter host ports for Shlink Server (defaults to `8080`) and Shlink Web Client UI (defaults to `8000`). Checks if ports are already in use.
+* **Database Selection**: Select SQLite (embedded) or PostgreSQL (deploys a separate `postgres:16-alpine` database service with automated credentials).
+* **Web Client Pre-configuration**: Customizes the Shlink server connection URL and display name so the web client UI automatically connects out-of-the-box.
+* **Docker Network**: Connects containers to a specified external docker network (e.g., `proxy-net` for Cloudflare Tunnel routing).
+* **Deploy Confirmation**: Reviews the generated `docker-compose.yml` and launches the services immediately.
 
 ---
 
