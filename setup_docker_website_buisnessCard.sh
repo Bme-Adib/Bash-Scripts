@@ -85,7 +85,7 @@ create_placeholder_html() {
         <h1>${title} Ready!</h1>
         <p>This is a placeholder page served from Nginx inside Docker.</p>
         <div class="credit">
-            Bash Script By Adib Builds (<a href="https://github.com/Bme-Adib" target="_blank">https://github.com/Bme-Adib</a>)
+            Bash Script By Ghannams Academy (<a href="https://github.com/Bme-Adib" target="_blank">https://github.com/Bme-Adib</a>)
         </div>
     </div>
 </body>
@@ -95,7 +95,7 @@ EOF
 
 # --- Header ---
 echo -e "${GREEN}============================================================${NC}"
-echo -e "${GREEN}  Bash Script By Adib Builds (https://github.com/Bme-Adib)  ${NC}"
+echo -e "${GREEN}  Bash Script By Ghannams Academy (github.com/Bme-Adib)     ${NC}"
 echo -e "${GREEN}============================================================${NC}"
 echo -e "${BLUE}=== Docker Compose Project Creator ===${NC}\n"
 

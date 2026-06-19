@@ -45,7 +45,7 @@ validate_numeric() {
 
 # --- Header ---
 echo -e "${GREEN}============================================================${NC}"
-echo -e "${GREEN}  Bash Script By Adib Builds (https://github.com/Bme-Adib)  ${NC}"
+echo -e "${GREEN}  Bash Script By Ghannams Academy (github.com/Bme-Adib)     ${NC}"
 echo -e "${GREEN}============================================================${NC}"
 echo -e "${BLUE}=== SiYuan Note Docker Installer & Setup ===${NC}\n"
 

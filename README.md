@@ -1,4 +1,4 @@
-# 🛠️ Home Server Helper Bash Scripts by Adib Builds
+# 🛠️ Home Server Helper Bash Scripts by Ghannams Academy
 
 [![YouTube](https://img.shields.io/badge/YouTube-@adibbuilds-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/@adibbuilds)
 [![Instagram](https://img.shields.io/badge/Instagram-@adibbuilds-purple?style=for-the-badge&logo=instagram)](https://www.instagram.com/adibbuilds)
@@ -6,17 +6,17 @@
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue?style=for-the-badge&logo=docker)](https://www.docker.com)
 [![Bash](https://img.shields.io/badge/Shell-Bash_5.0+-green?style=for-the-badge&logo=gnu-bash)](https://www.gnu.org/software/bash/)
 
-Welcome! This repository contains a collection of interactive, robust, and automated bash helper scripts designed by **[Adib Builds](https://adibbuilds.com)**. These scripts aim to simplify home server management, automate initial Ubuntu Server hardening, and launch essential Docker applications and containers with zero hassle.
+Welcome! This repository contains a collection of interactive, robust, and automated bash helper scripts designed by **Ghannams Academy**. These scripts aim to simplify home server management, automate initial Ubuntu Server hardening, and launch essential Docker applications and containers with zero hassle.
 
 > [!TIP]
-> You can also check the **[Adib Builds Downloads Page](https://adibbuilds.com/downloads)** to find all of these scripts with one-click copy options, making it incredibly easy to copy and run them directly on your server! 
+> You can also access these scripts directly from this repository to run them on your server! 
 
 ---
 
-## 🌐 Connect With Adib Builds
+## 🌐 Connect With Ghannams Academy
 
 Stay updated with new guides, tutorials, and scripts:
-* 📺 **YouTube:** [Adib Builds Channel](https://www.youtube.com/@adibbuilds)
+* 📺 **YouTube:** [Ghannams Academy Channel](https://www.youtube.com/@adibbuilds)
 * 📸 **Instagram:** [@adibbuilds](https://www.instagram.com/adibbuilds)
 * 🌐 **Website:** [adibbuilds.com](https://adibbuilds.com)
 * 📇 **Digital Business Card:** [card.adibbuilds.com](https://card.adibbuilds.com)
@@ -461,4 +461,4 @@ chmod +x setup_fish_starship.sh
 ---
 
 > [!NOTE]
-> All scripts in this repository are formatted in the **Adib Builds Style** to ensure strict shell safety (`set -euo pipefail`), colorized diagnostic outputs, directory/file protection safeguards, and easy docker container management commands.
+> All scripts in this repository are formatted in the **Ghannams Academy Style** to ensure strict shell safety (`set -euo pipefail`), colorized diagnostic outputs, directory/file protection safeguards, and easy docker container management commands.

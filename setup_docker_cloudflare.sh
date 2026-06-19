@@ -22,7 +22,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 
 # --- Header ---
 echo -e "${GREEN}============================================================${NC}"
-echo -e "${GREEN}  Bash Script By Adib Builds (https://github.com/Bme-Adib)  ${NC}"
+echo -e "${GREEN}  Bash Script By Ghannams Academy (github.com/Bme-Adib)     ${NC}"
 echo -e "${GREEN}============================================================${NC}"
 echo -e "${BLUE}=== Portable Cloudflare Tunnel Auto-Setup ===${NC}\n"
 
