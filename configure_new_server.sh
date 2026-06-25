@@ -450,18 +450,44 @@ do_vpn_tunnel() {
                     return 1
                 fi
                 log_info "Setting up Tailscale Docker container..."
+                
+                # 1. Ask for Tailscale Instance Name
+                read -rp "Enter Tailscale Instance Name: " TS_INSTANCE_NAME
+                while [ -z "$TS_INSTANCE_NAME" ]; do
+                    log_error "Instance Name cannot be empty."
+                    read -rp "Enter Tailscale Instance Name: " TS_INSTANCE_NAME
+                done
+                
+                # 2. Ask for Tailscale Auth Key
                 read -rp "Enter Tailscale Auth Key (optional, or press Enter to login manually via link): " TS_AUTHKEY
                 
-                local target_dir="/opt/tailscale"
-                mkdir -p "$target_dir"
+                # 3. Ask for base directory path starting from home directory
+                local user_home
+                user_home=$(eval echo "~$REAL_USER")
+                read -rp "Enter base directory to place the Tailscale folder [${user_home}]: " BASE_PATH
+                BASE_PATH=${BASE_PATH:-$user_home}
+                
+                # Resolve relative path or ~/
+                if [[ "$BASE_PATH" =~ ^\~(/.*)?$ ]]; then
+                    BASE_PATH="${user_home}${BASE_PATH#\~}"
+                elif [[ ! "$BASE_PATH" =~ ^/ ]]; then
+                    BASE_PATH="${user_home}/${BASE_PATH}"
+                fi
+                
+                local target_dir="${BASE_PATH}/tailscale-${TS_INSTANCE_NAME}"
+                
+                if [ ! -d "$target_dir" ]; then
+                    log_info "Directory '${target_dir}' does not exist. Creating it now..."
+                    mkdir -p "$target_dir"
+                fi
                 mkdir -p "${target_dir}/state"
                 
                 cat <<EOF > "${target_dir}/docker-compose.yml"
 version: "3.7"
 services:
-  tailscale:
+  tailscale-${TS_INSTANCE_NAME}:
     image: tailscale/tailscale:latest
-    container_name: tailscale
+    container_name: tailscale-${TS_INSTANCE_NAME}
     volumes:
       - /dev/net/tun:/dev/net/tun
       - ${target_dir}/state:/var/lib/tailscale
@@ -469,13 +495,19 @@ services:
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
+    environment:
+      - TS_HOSTNAME=tailscale-${TS_INSTANCE_NAME}
     restart: unless-stopped
 EOF
                 if [ -n "$TS_AUTHKEY" ]; then
                     cat <<EOF >> "${target_dir}/docker-compose.yml"
-    environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
 EOF
+                fi
+                
+                # Ensure the target user owns the created folder if they are not root
+                if [ "${REAL_USER}" != "root" ]; then
+                    chown -R "${REAL_USER}:${REAL_USER}" "$target_dir"
                 fi
                 
                 log_success "Created Tailscale docker-compose.yml in ${target_dir}."
@@ -483,11 +515,11 @@ EOF
                 START_TS=${START_TS:-y}
                 if [[ "$START_TS" =~ ^[Yy]$ ]]; then
                     docker compose -f "${target_dir}/docker-compose.yml" up -d
-                    log_success "Tailscale container started successfully."
+                    log_success "Tailscale container 'tailscale-${TS_INSTANCE_NAME}' started successfully."
                     if [ -z "$TS_AUTHKEY" ]; then
                         log_info "Checking container logs for the login URL..."
                         sleep 3
-                        docker logs tailscale | grep -E "To authenticate, visit:" || log_info "Please run 'docker logs tailscale' to get the authentication URL."
+                        docker logs "tailscale-${TS_INSTANCE_NAME}" | grep -E "To authenticate, visit:" || log_info "Please run 'docker logs tailscale-${TS_INSTANCE_NAME}' to get the authentication URL."
                     fi
                 fi
             else
