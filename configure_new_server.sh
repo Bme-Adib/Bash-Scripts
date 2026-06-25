@@ -438,98 +438,38 @@ do_vpn_tunnel() {
     
     case "${NET_CHOICE:-0}" in
         1)
-            echo -e "\n${BLUE}>>> Tailscale Deployment Options:${NC}"
-            echo -e "  [Option A] Run Tailscale inside a Docker Container (${GREEN}Recommended${NC})"
-            echo -e "  [Option B] Install Tailscale natively on the Host"
-            read -rp "Select deployment type (A/B) [A]: " TS_TYPE
-            TS_TYPE=${TS_TYPE:-A}
-            
-            if [[ "$TS_TYPE" =~ ^[Aa]$ ]]; then
-                if ! command -v docker >/dev/null 2>&1; then
-                    log_error "Docker is required but not installed. Please install Docker first (Option 51)."
-                    return 1
-                fi
-                log_info "Setting up Tailscale Docker container..."
+            log_info "Installing Tailscale natively on the host..."
+            if curl -fsSL https://tailscale.com/install.sh | sh; then
+                log_success "Tailscale installed natively on the host."
+                systemctl enable --now tailscaled
                 
-                # 1. Ask for Tailscale Instance Name
-                read -rp "Enter Tailscale Instance Name: " TS_INSTANCE_NAME
-                while [ -z "$TS_INSTANCE_NAME" ]; do
-                    log_error "Instance Name cannot be empty."
-                    read -rp "Enter Tailscale Instance Name: " TS_INSTANCE_NAME
-                done
-                
-                # 2. Ask for Tailscale Auth Key
-                read -rp "Enter Tailscale Auth Key (optional, or press Enter to login manually via link): " TS_AUTHKEY
-                
-                # 3. Ask for base directory path starting from home directory
-                local user_home
-                user_home=$(eval echo "~$REAL_USER")
-                read -rp "Enter base directory to place the Tailscale folder [${user_home}]: " BASE_PATH
-                BASE_PATH=${BASE_PATH:-$user_home}
-                
-                # Resolve relative path or ~/
-                if [[ "$BASE_PATH" =~ ^\~(/.*)?$ ]]; then
-                    BASE_PATH="${user_home}${BASE_PATH#\~}"
-                elif [[ ! "$BASE_PATH" =~ ^/ ]]; then
-                    BASE_PATH="${user_home}/${BASE_PATH}"
-                fi
-                
-                local target_dir="${BASE_PATH}/tailscale-${TS_INSTANCE_NAME}"
-                
-                if [ ! -d "$target_dir" ]; then
-                    log_info "Directory '${target_dir}' does not exist. Creating it now..."
-                    mkdir -p "$target_dir"
-                fi
-                mkdir -p "${target_dir}/state"
-                
-                cat <<EOF > "${target_dir}/docker-compose.yml"
-version: "3.7"
-services:
-  tailscale-${TS_INSTANCE_NAME}:
-    image: tailscale/tailscale:latest
-    container_name: tailscale-${TS_INSTANCE_NAME}
-    volumes:
-      - /dev/net/tun:/dev/net/tun
-      - ${target_dir}/state:/var/lib/tailscale
-    network_mode: host
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    environment:
-      - TS_HOSTNAME=tailscale-${TS_INSTANCE_NAME}
-    restart: unless-stopped
-EOF
-                if [ -n "$TS_AUTHKEY" ]; then
-                    cat <<EOF >> "${target_dir}/docker-compose.yml"
-      - TS_AUTHKEY=${TS_AUTHKEY}
-EOF
-                fi
-                
-                # Ensure the target user owns the created folder if they are not root
-                if [ "${REAL_USER}" != "root" ]; then
-                    chown -R "${REAL_USER}:${REAL_USER}" "$target_dir"
-                fi
-                
-                log_success "Created Tailscale docker-compose.yml in ${target_dir}."
-                read -rp "Start the Tailscale container now? (y/n) [y]: " START_TS
-                START_TS=${START_TS:-y}
-                if [[ "$START_TS" =~ ^[Yy]$ ]]; then
-                    docker compose -f "${target_dir}/docker-compose.yml" up -d
-                    log_success "Tailscale container 'tailscale-${TS_INSTANCE_NAME}' started successfully."
-                    if [ -z "$TS_AUTHKEY" ]; then
-                        log_info "Checking container logs for the login URL..."
-                        sleep 3
-                        docker logs "tailscale-${TS_INSTANCE_NAME}" | grep -E "To authenticate, visit:" || log_info "Please run 'docker logs tailscale-${TS_INSTANCE_NAME}' to get the authentication URL."
-                    fi
-                fi
+                # Onboarding Info
+                echo -e "\n${GREEN}============================================================${NC}"
+                echo -e "${GREEN}             Tailscale Installation Complete!                ${NC}"
+                echo -e "${GREEN}============================================================${NC}"
+                echo -e "${BLUE}=== Quick Start Onboarding Guide ===${NC}"
+                echo -e "To authenticate and log in to your Tailscale network:"
+                echo -e "  ${YELLOW}sudo tailscale up${NC}"
+                echo -e ""
+                echo -e "To check connections and view your peer machines:"
+                echo -e "  ${YELLOW}tailscale status${NC}"
+                echo -e ""
+                echo -e "To find the Tailscale IP of your server:"
+                echo -e "  ${YELLOW}tailscale ip -4${NC}"
+                echo -e ""
+                echo -e "To temporarily disconnect from Tailscale:"
+                echo -e "  ${YELLOW}sudo tailscale down${NC}"
+                echo -e ""
+                echo -e "${BLUE}=== Taildrop File Sharing Commands ===${NC}"
+                echo -e "Tailscale has a built-in secure file sharing tool called Taildrop."
+                echo -e "  1. To send a file to another machine on your tailnet:"
+                echo -e "     ${YELLOW}tailscale file cp <path-to-file> <peer-node-name>:${NC}"
+                echo -e "     (Note the trailing colon after the peer name)"
+                echo -e "  2. To receive/download files sent to this server:"
+                echo -e "     ${YELLOW}sudo tailscale file get /path/to/save/directory/${NC}"
+                echo -e "============================================================\n"
             else
-                log_info "Installing Tailscale natively on host..."
-                if curl -fsSL https://tailscale.com/install.sh | sh; then
-                    log_success "Tailscale installed natively on the host."
-                    log_info "Run 'sudo tailscale up' to log in and connect your server."
-                else
-                    log_error "Tailscale installation failed."
-                fi
+                log_error "Tailscale installation failed."
             fi
             ;;
         2)
@@ -1064,7 +1004,7 @@ style = "bold red"
 format = "exit [$symbol$int]($style) "
 
 [character]
-success_symbol = "[👍 ❯](bold emerald)" # Emerald Green for "System Ready"
+success_symbol = "[⚡ ❯](bold green)" # Green bolt for "System Ready"
 error_symbol = "[❯](bold ruby)"    # Ruby Red for "System Error"
 
 # LANGUAGE MODULES (Relevant to your stacks)
@@ -1238,7 +1178,26 @@ EOF
         log_warning "Fish shell binary not found. Please install Fish shell first (Option 41)."
     fi
 
+    local fish_config="${user_home}/.config/fish/config.fish"
+    local starship_config="${user_home}/.config/starship.toml"
+    
+    log_info "Fish configuration is stored at: ${fish_config}"
+    log_info "Starship configuration is stored at: ${starship_config}"
+    
+    read -rp "Would you like to edit the Fish configuration file now? (y/n) [n]: " EDIT_FISH
+    EDIT_FISH=${EDIT_FISH:-n}
+    if [[ "$EDIT_FISH" =~ ^[Yy]$ ]]; then
+        nano "$fish_config"
+    fi
+    
+    read -rp "Would you like to edit the Starship configuration file now? (y/n) [n]: " EDIT_STARSHIP
+    EDIT_STARSHIP=${EDIT_STARSHIP:-n}
+    if [[ "$EDIT_STARSHIP" =~ ^[Yy]$ ]]; then
+        nano "$starship_config"
+    fi
+
     log_success "Shell and custom telemetry replication configuration complete."
+    log_warning "IMPORTANT: You MUST log out of your terminal session and log back in for all changes to take full effect!"
 }
 
 # ==========================================
