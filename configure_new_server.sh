@@ -513,11 +513,40 @@ EOF
                     return 1
                 fi
                 log_info "Setting up Cloudflare Tunnel Docker container..."
+                
+                # 1. Ask for Tunnel Name
+                read -rp "Enter Cloudflare Tunnel Name: " CF_TUNNEL_NAME
+                while [ -z "$CF_TUNNEL_NAME" ]; do
+                    log_error "Tunnel Name cannot be empty."
+                    read -rp "Enter Cloudflare Tunnel Name: " CF_TUNNEL_NAME
+                done
+                
+                # 2. Ask for Cloudflare Tunnel Token
                 read -rp "Enter Cloudflare Tunnel Token: " CF_TOKEN
                 while [ -z "$CF_TOKEN" ]; do
                     log_error "Cloudflare Tunnel Token cannot be empty."
                     read -rp "Enter Cloudflare Tunnel Token: " CF_TOKEN
                 done
+                
+                # 3. Ask for base directory path starting from home directory
+                local user_home
+                user_home=$(eval echo "~$REAL_USER")
+                read -rp "Enter base directory to place the tunnel folder [${user_home}]: " BASE_PATH
+                BASE_PATH=${BASE_PATH:-$user_home}
+                
+                # Resolve relative path or ~/
+                if [[ "$BASE_PATH" =~ ^\~(/.*)?$ ]]; then
+                    BASE_PATH="${user_home}${BASE_PATH#\~}"
+                elif [[ ! "$BASE_PATH" =~ ^/ ]]; then
+                    BASE_PATH="${user_home}/${BASE_PATH}"
+                fi
+                
+                local target_dir="${BASE_PATH}/cloudflare-${CF_TUNNEL_NAME}"
+                
+                if [ ! -d "$target_dir" ]; then
+                    log_info "Directory '${target_dir}' does not exist. Creating it now..."
+                    mkdir -p "$target_dir"
+                fi
                 
                 read -rp "Enter Docker Network name [proxy-net]: " CF_NET
                 CF_NET=${CF_NET:-proxy-net}
@@ -532,15 +561,12 @@ EOF
                     fi
                 fi
                 
-                local target_dir="/opt/cloudflare-tunnel"
-                mkdir -p "$target_dir"
-                
                 cat <<EOF > "${target_dir}/docker-compose.yml"
 version: "3"
 services:
-  cloudflare-tunnel:
+  cloudflare-tunnel-${CF_TUNNEL_NAME}:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflare-tunnel
+    container_name: cloudflare-tunnel-${CF_TUNNEL_NAME}
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:
@@ -553,12 +579,17 @@ networks:
     external:
       name: ${CF_NET}
 EOF
+                # Ensure the target user owns the created folder if they are not root
+                if [ "${REAL_USER}" != "root" ]; then
+                    chown -R "${REAL_USER}:${REAL_USER}" "$target_dir"
+                fi
+                
                 log_success "Created Cloudflare Tunnel docker-compose.yml in ${target_dir}."
                 read -rp "Start the Cloudflare Tunnel container now? (y/n) [y]: " START_CF
                 START_CF=${START_CF:-y}
                 if [[ "$START_CF" =~ ^[Yy]$ ]]; then
                     docker compose -f "${target_dir}/docker-compose.yml" up -d
-                    log_success "Cloudflare Tunnel container started successfully."
+                    log_success "Cloudflare Tunnel container 'cloudflare-tunnel-${CF_TUNNEL_NAME}' started successfully."
                 fi
             else
                 log_info "Installing Cloudflare Tunnel natively on host..."
