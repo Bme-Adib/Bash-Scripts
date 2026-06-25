@@ -27,6 +27,7 @@ Stay updated with new guides, tutorials, and scripts:
 
 Click any of the scripts below to jump directly to its description, installation instructions, and configuration options:
 
+* 🚀 [VPS & Laptop Server Auto-Configuration (`configure_new_server.sh`)](#server-config)
 * 🖥️ [Ubuntu Server Initial Setup (`server_setup.sh`)](#server-setup)
 * 🐳 [Docker Manager & Installer (`manage_docker.sh`)](#docker-manager)
 * ☁️ [Cloudflare Tunnel Auto-Setup (`setup_docker_cloudflare.sh`)](#cloudflare-tunnel)
@@ -57,10 +58,56 @@ Click any of the scripts below to jump directly to its description, installation
 3. **Execute:**
    ```bash
    ./<script_name>.sh
-   # (Note: server_setup.sh and manage_docker.sh require sudo)
+   # (Note: configure_new_server.sh, server_setup.sh, and manage_docker.sh require sudo)
    ```
 
 ---
+
+<a id="server-config"></a>
+## 🚀 VPS & Laptop Server Auto-Configuration (`configure_new_server.sh`)
+
+### Description
+An all-in-one interactive, menu-driven post-installation utility that combines the best features from `server_setup.sh`, `setup_fish_starship.sh`, and `manage_docker.sh`. It is optimized for setting up a brand new deployed VPS or a repurposed Laptop Server. 
+
+It handles system update/upgrades, SSH hardening (custom port, SSH key registration, disabling root password login), UFW firewall, Fail2Ban protection, static IP configurations, swap allocations, Fish Shell + Starship theme replication (complete with dynamic system stats welcome banner and `sysstat` command), Laptop Lid lid-close suspend prevention, and native Docker + Compose V2 deployment/cleanup control.
+
+### How to Use
+**One-Click Run (Recommended):**
+```bash
+sudo bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/configure_new_server.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x configure_new_server.sh
+sudo ./configure_new_server.sh
+```
+
+### Options & Inputs Inside the Script
+The script organizes configuration modules into 5 clear categories:
+* **`[1] System & Security Setup`**:
+  * **`11) Update & Upgrade packages`**: Upgrades packages and pre-installs a core toolbelt (`curl`, `wget`, `git`, `htop`, `btop`, `tmux`, `build-essential`).
+  * **`12) Create Sudo User`**: Easily scaffolds a new admin account with full sudo permissions.
+  * **`13) Configure SSH`**: Registers public SSH keys, changes default SSH port, and hardens configuration by disabling password authentication and root SSH login.
+  * **`14) Install & Configure Fail2Ban`**: Installs Fail2ban and configures a jail to monitor SSH authentication failures on your active SSH port.
+  * **`15) Enable Firewall (UFW)`**: Configures default blocks and opens the exact SSH port configured.
+  * **`16) Laptop Server: Disable Suspend on Lid Close`**: Configures `/etc/systemd/logind.conf` to ignore lid closures so laptop servers stay online.
+* **`[2] Network & Time Settings`**:
+  * **`21) Configure Static IP Address (Netplan)`**: Backs up existing configs and sets a static IP with gateway/DNS parameters.
+  * **`22) Configure Upstream DNS`**: Configures `systemd-resolved` upstream servers.
+  * **`23) Enable NTP & Set Timezone`**: Sets timezone and activates system clock synchronization.
+* **`[3] Memory & Storage`**:
+  * **`31) Create Swap File & Optimize Swappiness`**: Recommends/allocates swap space and configures swappiness to `10` for enhanced memory management.
+* **`[4] Shell & CLI Replica`**:
+  * **`41) Install Fish Shell, Starship Prompt, & eza`**: Sets up modern CLI tool suites.
+  * **`42) Configure Shell, Welcome Banner, & Telemetry`**: Generates custom `starship.toml`, aliases `ls` to `eza`, creates a custom ASCII welcome greeting showing telemetry stats, and installs the custom `sysstat` command. Can target a specific user.
+* **`[5] Docker Control`**:
+  * **`51) Install/Update Docker & Docker Compose V2`**: Automatically adds Docker repositories and dependencies, setting up user privileges.
+  * **`52) Docker Diagnostics`**: Displays running Docker status and disk allocations.
+  * **`53) Docker Prune Operations`**: Offers granular control over pruning unused volumes, images, or full system deep cleans.
+  * **`54) Restart Docker Daemon Service`**: Restarts the Docker service.
+
+---
+
 
 <a id="server-setup"></a>
 ## 🖥️ Ubuntu Server Initial Setup (`server_setup.sh`)
