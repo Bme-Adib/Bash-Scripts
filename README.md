@@ -35,7 +35,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 📂 [FileBrowser Quantum Container Setup (`setup_docker_filebrowser.sh`)](#filebrowser)
 * 📓 [SiYuan Note Private Workspace Installer (`setup_docker_siyyuan.sh`)](#siyuan-note)
 * 🔍 [Dozzle Real-time Log Viewer (`setup_docker_dozzle.sh`)](#dozzle-setup)
-* 🗄️ [Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
+* 🗄️ [Postgres 16, PostgREST & Adminer Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
 * 🔗 [Shlink URL Shortener & Web UI Setup (`setup_docker_shlink.sh`)](#shlink-setup)
 * 🐳 [Ubuntu Playground Container Setup (`setup_docker_ubuntu.sh`)](#ubuntu-setup)
 * 🐚 [Fish Shell & Starship Prompt Replicator (`setup_fish_starship.sh`)](#fish-setup)
@@ -285,10 +285,10 @@ chmod +x setup_docker_dozzle.sh
 ---
 
 <a id="postgres-postgrest-setup"></a>
-## 🗄️ Postgres 16 & PostgREST API Setup (`setup_docker_postgres_postgrest.sh`)
+## 🗄️ Postgres 16, PostgREST & Adminer Setup (`setup_docker_postgres_postgrest.sh`)
 
 ### Description
-Deploys a Postgres 16 database running on Alpine Linux alongside a PostgREST container. PostgREST automatically exposes your database tables, views, and functions directly as a RESTful web API. The setup script automatically creates the anonymous access database role (`anon`) and grants proper schema privileges to make configuration completely seamless.
+Deploys a Postgres 16 database running on Alpine Linux alongside a PostgREST container and an Adminer database management dashboard. PostgREST automatically exposes your database tables, views, and functions directly as a RESTful web API, while Adminer provides a visual web interface to manage your database. The setup script automatically creates the anonymous access database role (`anon`) and grants proper schema privileges to make configuration completely seamless.
 
 ### How to Use
 **One-Click Run (Recommended):**
@@ -306,10 +306,11 @@ chmod +x setup_docker_postgres_postgrest.sh
 * **Database Credentials**: Specify custom database owner username and password (generates a secure random 16-character password by default).
 * **Database Port Exposure**: Option to bind the PostgreSQL port (`5432`) to the host. Checks if the port is in use.
 * **PostgREST API Port Exposure**: Option to bind the PostgREST API port (`3000`) to the host (defaults to `3000`). Checks if the port is in use.
+* **Adminer Port Exposure**: Option to bind the Adminer dashboard port (`8080`) to the host (defaults to `8080`). Checks if the port is in use.
 * **PostgREST Configuration**: Set custom API schema (default `public`) and anonymous db role (default `anon`).
-* **Cloudflare Subdomain**: The subdomain (e.g., `api.example.com`) to route REST API traffic.
+* **Cloudflare Subdomain**: The subdomains (e.g. `api.example.com` for PostgREST, and optionally `db.example.com` for Adminer) to route traffic securely.
 * **Cloudflare Network**: Docker network name (default `proxy-net`). Offers to create if missing.
-* **Deploy Confirmation**: Reviews settings and launches both Postgres and PostgREST containers.
+* **Deploy Confirmation**: Reviews settings and launches Postgres, PostgREST, and Adminer containers.
 
 ---
 

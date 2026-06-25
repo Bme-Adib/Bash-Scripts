@@ -111,19 +111,41 @@ if [[ "$EXPOSE_PGRST" =~ ^[Yy]$ ]]; then
       - ${PGRST_HOST_PORT}:3000"
 fi
 
-echo -e "\n${BLUE}>>> Step 3: PostgREST Settings${NC}"
+# Adminer Port
+read -rp "Expose Adminer port (8080) to the host system? (y/n) [y]: " EXPOSE_ADMINER
+EXPOSE_ADMINER=${EXPOSE_ADMINER:-y}
+ADMINER_PORT_MAPPING_BLOCK="# To expose the port to the host system, uncomment the lines below.
+    # Change the port number before the colon (8080) to whatever port you want.
+    # ports:
+    #   - 8080:8080"
+ADMINER_HOST_PORT="N/A"
+if [[ "$EXPOSE_ADMINER" =~ ^[Yy]$ ]]; then
+    while true; do
+        read -rp "Enter host port for Adminer [8080]: " ADMINER_HOST_PORT
+        ADMINER_HOST_PORT=${ADMINER_HOST_PORT:-8080}
+        if validate_port "$ADMINER_HOST_PORT"; then
+            break
+        fi
+    done
+    ADMINER_PORT_MAPPING_BLOCK="ports:
+      - ${ADMINER_HOST_PORT}:8080"
+fi
+
+echo -e "\n\${BLUE}>>> Step 3: PostgREST Settings\${NC}"
 read -rp "Enter PostgREST Schema [public]: " PGRST_SCHEMA
 PGRST_SCHEMA=${PGRST_SCHEMA:-public}
 
 read -rp "Enter PostgREST Anonymous Role [anon]: " PGRST_ANON_ROLE
 PGRST_ANON_ROLE=${PGRST_ANON_ROLE:-anon}
 
-echo -e "\n${BLUE}>>> Step 4: Configure Cloudflare Subdomain & Network${NC}"
+echo -e "\n\${BLUE}>>> Step 4: Configure Cloudflare Subdomain & Network\${NC}"
 read -rp "Enter subdomain for PostgREST API (e.g. api.example.com): " SUBDOMAIN
 while [ -z "$SUBDOMAIN" ]; do
     log_error "Subdomain cannot be empty."
     read -rp "Enter the subdomain: " SUBDOMAIN
 done
+
+read -rp "Enter subdomain for Adminer (e.g. db.example.com) [Skip]: " ADMINER_SUBDOMAIN
 
 # Show existing networks on the host
 log_info "Detecting active Docker networks on host..."
@@ -218,6 +240,16 @@ services:
     networks:
       - ${CLOUDFLARE_NET}
 
+  adminer:
+    image: adminer:4.11.0
+    container_name: adminer
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    ${ADMINER_PORT_MAPPING_BLOCK}
+    networks:
+      - ${CLOUDFLARE_NET}
+
 networks:
   ${CLOUDFLARE_NET}:
     external: true
@@ -251,21 +283,32 @@ echo -e "PostgreSQL Database: ${GREEN}${DB_NAME}${NC}"
 echo -e "PostgreSQL User:     ${GREEN}${DB_USER}${NC}"
 echo -e "PostgreSQL Password: ${GREEN}${DB_PASS}${NC}"
 if [[ "$PG_HOST_PORT" != "N/A" ]]; then
-    echo -e "PostgreSQL Local:    ${YELLOW}localhost:${PG_HOST_PORT}${NC}"
+    echo -e "PostgreSQL Local:    \${YELLOW}localhost:\${PG_HOST_PORT}\${NC}"
 fi
 if [[ "$PGRST_HOST_PORT" != "N/A" ]]; then
-    echo -e "PostgREST API Local: ${YELLOW}http://localhost:${PGRST_HOST_PORT}${NC}"
+    echo -e "PostgREST API Local: \${YELLOW}http://localhost:\${PGRST_HOST_PORT}\${NC}"
+fi
+if [[ "$ADMINER_HOST_PORT" != "N/A" ]]; then
+    echo -e "Adminer Local:       \${YELLOW}http://localhost:\${ADMINER_HOST_PORT}\${NC}"
 fi
 
-echo -e "\n${BLUE}=== Cloudflare Tunnel Integration Instructions ===${NC}"
+echo -e "\n\${BLUE}=== Cloudflare Tunnel Integration Instructions ===\${NC}"
 echo -e "To configure access via Cloudflare Zero Trust Tunnels:"
-echo -e "  1. Log in to your Cloudflare Dashboard and navigate to ${GREEN}Access -> Tunnels${NC}."
+echo -e "  1. Log in to your Cloudflare Dashboard and navigate to \${GREEN}Access -> Tunnels\${NC}."
 echo -e "  2. Edit the active Tunnel servicing this network."
-echo -e "  3. Click ${YELLOW}Add a public hostname${NC} and enter:"
-echo -e "     - Subdomain/Domain: ${GREEN}${SUBDOMAIN}${NC}"
-echo -e "     - Service Type:     ${YELLOW}HTTP${NC}"
-echo -e "     - URL:              ${YELLOW}http://postgrest:3000${NC} (Internal Docker DNS)"
-echo -e "  4. Save Hostname. Cloudflare will route traffic securely to the API."
+echo -e "  3. Click \${YELLOW}Add a public hostname\${NC} and enter:"
+echo -e "     - Subdomain/Domain: \${GREEN}\${SUBDOMAIN}\${NC}"
+echo -e "     - Service Type:     \${YELLOW}HTTP\${NC}"
+echo -e "     - URL:              \${YELLOW}http://postgrest:3000\${NC} (Internal Docker DNS)"
+if [ -n "$ADMINER_SUBDOMAIN" ]; then
+    echo -e "  4. Add another public hostname for Adminer:"
+    echo -e "     - Subdomain/Domain: \${GREEN}\${ADMINER_SUBDOMAIN}\${NC}"
+    echo -e "     - Service Type:     \${YELLOW}HTTP\${NC}"
+    echo -e "     - URL:              \${YELLOW}http://adminer:8080\${NC} (Internal Docker DNS)"
+    echo -e "  5. Save Hostnames. Cloudflare will route traffic securely to the API and Adminer."
+else
+    echo -e "  4. Save Hostname. Cloudflare will route traffic securely to the API."
+fi
 
 echo -e "\n${BLUE}=== Management Commands ===${NC}"
 echo -e "View Container Logs:"
