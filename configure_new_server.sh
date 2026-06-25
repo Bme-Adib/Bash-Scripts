@@ -81,6 +81,47 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# --- User Confirmation Wrapper ---
+confirm_action() {
+    local choice="$1"
+    local desc=""
+    
+    case "$choice" in
+        11) desc="Update package index, upgrade packages, and install CLI utilities (curl, wget, git, htop, btop, tmux, build-essential)." ;;
+        12) desc="Scaffold a new administrative user account with sudo capabilities." ;;
+        13) desc="Harden SSH by adding keys, changing the SSH port, and optionally disabling password/root login." ;;
+        14) desc="Install and configure Fail2Ban to block brute-force attempts on the SSH service." ;;
+        15) desc="Install and configure the UFW firewall, closing all incoming ports except standard and custom SSH ports." ;;
+        16) desc="Disable laptop lid suspend action so the system remains awake when the lid is closed." ;;
+        21) desc="Assign a static IP address to the primary network interface (Netplan)." ;;
+        22) desc="Configure upstream DNS servers in systemd-resolved." ;;
+        23) desc="Enable NTP network time synchronization and configure the local timezone." ;;
+        24) desc="Install and configure VPN / Secure Tunneling services (Tailscale or Cloudflare Tunnel, native or Docker)." ;;
+        31) desc="Create or resize a swap file and configure kernel swappiness to 10." ;;
+        41) desc="Install Fish shell, Starship prompt binary, and the modern ls tool eza." ;;
+        42) desc="Write custom shell settings, welcome banner art, telemetry command, and set Fish as the default shell." ;;
+        51) desc="Install or update Docker Engine and Docker Compose V2, and configure docker group permissions." ;;
+        52) desc="Inspect Docker service daemon telemetry, status, and container/image storage footprints." ;;
+        53) desc="Prune stopped containers, unused networks, images, and docker volumes." ;;
+        54) desc="Restart the systemd Docker daemon service." ;;
+        *) return 0 ;; # Return immediately for exit/invalid selections
+    esac
+
+    echo -e "\n${YELLOW}============================================================${NC}"
+    echo -e "${YELLOW}  PREPARING TO EXECUTE MODULE: ${choice}${NC}"
+    echo -e "${BLUE}  Summary: ${desc}${NC}"
+    echo -e "${YELLOW}============================================================${NC}"
+    
+    read -rp "Are you sure you want to proceed? (y/n) [y]: " CONF
+    CONF=${CONF:-y}
+    if [[ "$CONF" =~ ^[Yy]$ ]]; then
+        return 0
+    else
+        log_info "Action cancelled by user. Returning to menu."
+        return 1
+    fi
+}
+
 # ==========================================
 # SYSTEM & SECURITY SETUP FUNCTIONS
 # ==========================================
@@ -266,9 +307,20 @@ do_configure_fail2ban() {
     local ssh_port
     ssh_port=$(grep -E "^Port " /etc/ssh/sshd_config | awk '{print $2}' | tail -n1 || echo "22")
     
-    # Create custom jail.local configuration
-    cat <<EOF > /etc/fail2ban/jail.local
+    local jail_path="/etc/fail2ban/jail.local"
+    local create_jail=true
+    if [ -f "$jail_path" ]; then
+        read -rp "Fail2Ban configuration already exists at ${jail_path}. Re-initialize with default settings? (y/n) [n]: " OVERWRITE_JAIL
+        OVERWRITE_JAIL=${OVERWRITE_JAIL:-n}
+        if [[ ! "$OVERWRITE_JAIL" =~ ^[Yy]$ ]]; then
+            create_jail=false
+        fi
+    fi
+
+    if [ "$create_jail" = true ]; then
+        cat <<EOF > "$jail_path"
 [DEFAULT]
+# Ban hosts for 1 hour after 5 failures in 10 minutes
 bantime = 1h
 findtime = 10m
 maxretry = 5
@@ -279,12 +331,26 @@ port = ${ssh_port}
 logpath = %(sshd_log)s
 backend = %(sshd_backend)s
 EOF
+    fi
+
+    # Interactive edit option
+    read -rp "Would you like to edit/review the Fail2Ban configuration (${jail_path}) now? (y/n) [n]: " EDIT_JAIL
+    EDIT_JAIL=${EDIT_JAIL:-n}
+    if [[ "$EDIT_JAIL" =~ ^[Yy]$ ]]; then
+        local editor="${EDITOR:-nano}"
+        if command -v "$editor" >/dev/null 2>&1; then
+            "$editor" "$jail_path"
+        else
+            log_warning "Editor '${editor}' not found. Falling back to nano..."
+            nano "$jail_path" || vi "$jail_path"
+        fi
+    fi
 
     systemctl daemon-reload
     systemctl enable --now fail2ban
     systemctl restart fail2ban
     
-    log_success "Fail2Ban successfully configured to monitor SSH on port ${ssh_port}."
+    log_success "Fail2Ban successfully configured and started."
 }
 
 # 15. Enable Firewall (UFW)
@@ -315,6 +381,18 @@ do_configure_firewall() {
     # Enable firewall (force skips the confirmation prompt)
     ufw --force enable
     log_success "UFW firewall enabled. Closed all incoming traffic except port ${ssh_port}. All outgoing allowed."
+
+    # Explain about server visibility and tunnel requirements
+    echo -e "\n${YELLOW}============================================================${NC}"
+    echo -e "${YELLOW}  [IMPORTANT SECURITY WARNING: FIREWALL ACCESSIBILITY]      ${NC}"
+    echo -e "${YELLOW}============================================================${NC}"
+    echo -e "The server is ${RED}NOT invisible${NC} to the network, but all incoming ports are now ${RED}CLOSED${NC} (except port ${ssh_port} for SSH)."
+    echo -e "To access other applications (e.g. Docker dashboards, databases, web sites) running on this server without exposing public ports on your router, you ${GREEN}MUST${NC} set up a secure tunnel."
+    echo -e "It is highly recommended to use either:"
+    echo -e "  1. ${BLUE}Tailscale VPN${NC} (Access your server privately via a secure mesh VPN)."
+    echo -e "  2. ${BLUE}Cloudflare Tunnel${NC} (Expose specific web services securely behind Cloudflare authentication)."
+    echo -e "Both options can be easily configured from Option 24 on the main menu!"
+    echo -e "${YELLOW}============================================================${NC}\n"
 }
 
 # 16. Laptop Server: Disable Suspend on Lid Close
@@ -348,6 +426,168 @@ do_laptop_lid_action() {
     else
         log_error "/etc/systemd/logind.conf not found. This does not look like a systemd system."
     fi
+}
+
+# 24. Install VPN & Secure Tunnel (Tailscale / Cloudflare)
+do_vpn_tunnel() {
+    echo -e "\n${YELLOW}=== VPN & Secure Tunnel Options ===${NC}"
+    echo "  1) Install Tailscale (VPN Mesh Network)"
+    echo "  2) Configure Cloudflare Tunnel (Secure Web Access)"
+    echo "  0) Return to main menu"
+    read -rp "Please select [0-2]: " NET_CHOICE
+    
+    case "${NET_CHOICE:-0}" in
+        1)
+            echo -e "\n${BLUE}>>> Tailscale Deployment Options:${NC}"
+            echo -e "  [Option A] Run Tailscale inside a Docker Container (${GREEN}Recommended${NC})"
+            echo -e "  [Option B] Install Tailscale natively on the Host"
+            read -rp "Select deployment type (A/B) [A]: " TS_TYPE
+            TS_TYPE=${TS_TYPE:-A}
+            
+            if [[ "$TS_TYPE" =~ ^[Aa]$ ]]; then
+                if ! command -v docker >/dev/null 2>&1; then
+                    log_error "Docker is required but not installed. Please install Docker first (Option 51)."
+                    return 1
+                fi
+                log_info "Setting up Tailscale Docker container..."
+                read -rp "Enter Tailscale Auth Key (optional, or press Enter to login manually via link): " TS_AUTHKEY
+                
+                local target_dir="/opt/tailscale"
+                mkdir -p "$target_dir"
+                mkdir -p "${target_dir}/state"
+                
+                cat <<EOF > "${target_dir}/docker-compose.yml"
+version: "3.7"
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    volumes:
+      - /dev/net/tun:/dev/net/tun
+      - ${target_dir}/state:/var/lib/tailscale
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    restart: unless-stopped
+EOF
+                if [ -n "$TS_AUTHKEY" ]; then
+                    cat <<EOF >> "${target_dir}/docker-compose.yml"
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+EOF
+                fi
+                
+                log_success "Created Tailscale docker-compose.yml in ${target_dir}."
+                read -rp "Start the Tailscale container now? (y/n) [y]: " START_TS
+                START_TS=${START_TS:-y}
+                if [[ "$START_TS" =~ ^[Yy]$ ]]; then
+                    docker compose -f "${target_dir}/docker-compose.yml" up -d
+                    log_success "Tailscale container started successfully."
+                    if [ -z "$TS_AUTHKEY" ]; then
+                        log_info "Checking container logs for the login URL..."
+                        sleep 3
+                        docker logs tailscale | grep -E "To authenticate, visit:" || log_info "Please run 'docker logs tailscale' to get the authentication URL."
+                    fi
+                fi
+            else
+                log_info "Installing Tailscale natively on host..."
+                if curl -fsSL https://tailscale.com/install.sh | sh; then
+                    log_success "Tailscale installed natively on the host."
+                    log_info "Run 'sudo tailscale up' to log in and connect your server."
+                else
+                    log_error "Tailscale installation failed."
+                fi
+            fi
+            ;;
+        2)
+            echo -e "\n${BLUE}>>> Cloudflare Tunnel Deployment Options:${NC}"
+            echo -e "  [Option A] Run Cloudflare Tunnel inside a Docker Container (${GREEN}Recommended${NC})"
+            echo -e "  [Option B] Install Cloudflare Tunnel natively on the Host"
+            read -rp "Select deployment type (A/B) [A]: " CF_TYPE
+            CF_TYPE=${CF_TYPE:-A}
+            
+            if [[ "$CF_TYPE" =~ ^[Aa]$ ]]; then
+                if ! command -v docker >/dev/null 2>&1; then
+                    log_error "Docker is required but not installed. Please install Docker first (Option 51)."
+                    return 1
+                fi
+                log_info "Setting up Cloudflare Tunnel Docker container..."
+                read -rp "Enter Cloudflare Tunnel Token: " CF_TOKEN
+                while [ -z "$CF_TOKEN" ]; do
+                    log_error "Cloudflare Tunnel Token cannot be empty."
+                    read -rp "Enter Cloudflare Tunnel Token: " CF_TOKEN
+                done
+                
+                read -rp "Enter Docker Network name [proxy-net]: " CF_NET
+                CF_NET=${CF_NET:-proxy-net}
+                
+                if ! docker network inspect "$CF_NET" >/dev/null 2>&1; then
+                    log_warning "Docker network '$CF_NET' does not exist."
+                    read -rp "Create it now? (y/n) [y]: " CREATE_NET
+                    CREATE_NET=${CREATE_NET:-y}
+                    if [[ "$CREATE_NET" =~ ^[Yy]$ ]]; then
+                        docker network create "$CF_NET"
+                        log_success "Created Docker network '$CF_NET'."
+                    fi
+                fi
+                
+                local target_dir="/opt/cloudflare-tunnel"
+                mkdir -p "$target_dir"
+                
+                cat <<EOF > "${target_dir}/docker-compose.yml"
+version: "3"
+services:
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflare-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CF_TOKEN}
+    networks:
+      - tunnel-net
+
+networks:
+  tunnel-net:
+    external:
+      name: ${CF_NET}
+EOF
+                log_success "Created Cloudflare Tunnel docker-compose.yml in ${target_dir}."
+                read -rp "Start the Cloudflare Tunnel container now? (y/n) [y]: " START_CF
+                START_CF=${START_CF:-y}
+                if [[ "$START_CF" =~ ^[Yy]$ ]]; then
+                    docker compose -f "${target_dir}/docker-compose.yml" up -d
+                    log_success "Cloudflare Tunnel container started successfully."
+                fi
+            else
+                log_info "Installing Cloudflare Tunnel natively on host..."
+                if [ -f /etc/debian_version ]; then
+                    log_info "Adding Cloudflare package repository..."
+                    mkdir -p --mode=0755 /usr/share/keyrings
+                    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+                    if ! command -v lsb_release >/dev/null 2>&1; then
+                        apt-get install -y lsb-release
+                    fi
+                    echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/cloudflared.list
+                    apt-get update && apt-get install -y cloudflared
+                    log_success "cloudflared installed natively on host."
+                    log_info "Configure your tunnel using: 'cloudflared tunnel login'"
+                else
+                    log_warning "Native installation only supported on Debian/Ubuntu via this script. Attempting generic install..."
+                    if curl -L --output /usr/local/bin/cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64; then
+                        chmod +x /usr/local/bin/cloudflared
+                        log_success "cloudflared binary downloaded and placed in /usr/local/bin/cloudflared."
+                    else
+                        log_error "Failed to download cloudflared binary."
+                    fi
+                fi
+            fi
+            ;;
+        *)
+            log_info "Returning to main menu."
+            ;;
+    esac
 }
 
 # ==========================================
@@ -1150,6 +1390,7 @@ while true; do
     echo -e "    21) Configure Static IP Address (Netplan)"
     echo -e "    22) Configure Upstream DNS (resolved.conf)"
     echo -e "    23) Enable NTP & Set Timezone"
+    echo -e "    24) Install VPN & Secure Tunnel (Tailscale / Cloudflare)"
     echo -e ""
     echo -e "  [3] Memory & Storage:"
     echo -e "    31) Create Swap File & Optimize Swappiness"
@@ -1170,22 +1411,23 @@ while true; do
     read -rp "Please enter your selection: " MENU_CHOICE
     
     case "$MENU_CHOICE" in
-        11) do_update_upgrade ;;
-        12) do_create_sudo_user ;;
-        13) do_configure_ssh ;;
-        14) do_configure_fail2ban ;;
-        15) do_configure_firewall ;;
-        16) do_laptop_lid_action ;;
-        21) do_static_ip ;;
-        22) do_configure_dns ;;
-        23) do_timezone_ntp ;;
-        31) do_swap_file ;;
-        41) do_install_shell_tools ;;
-        42) do_configure_shell_replica ;;
-        51) do_install_docker ;;
-        52) do_docker_diagnostics ;;
-        53) do_docker_pruning ;;
-        54) do_restart_docker ;;
+        11) if confirm_action 11; then do_update_upgrade; fi ;;
+        12) if confirm_action 12; then do_create_sudo_user; fi ;;
+        13) if confirm_action 13; then do_configure_ssh; fi ;;
+        14) if confirm_action 14; then do_configure_fail2ban; fi ;;
+        15) if confirm_action 15; then do_configure_firewall; fi ;;
+        16) if confirm_action 16; then do_laptop_lid_action; fi ;;
+        21) if confirm_action 21; then do_static_ip; fi ;;
+        22) if confirm_action 22; then do_configure_dns; fi ;;
+        23) if confirm_action 23; then do_timezone_ntp; fi ;;
+        24) if confirm_action 24; then do_vpn_tunnel; fi ;;
+        31) if confirm_action 31; then do_swap_file; fi ;;
+        41) if confirm_action 41; then do_install_shell_tools; fi ;;
+        42) if confirm_action 42; then do_configure_shell_replica; fi ;;
+        51) if confirm_action 51; then do_install_docker; fi ;;
+        52) if confirm_action 52; then do_docker_diagnostics; fi ;;
+        53) if confirm_action 53; then do_docker_pruning; fi ;;
+        54) if confirm_action 54; then do_restart_docker; fi ;;
         0)
             log_success "Exiting setup utility. Goodbye!"
             break

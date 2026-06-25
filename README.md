@@ -95,6 +95,7 @@ The script organizes configuration modules into 5 clear categories:
   * **`21) Configure Static IP Address (Netplan)`**: Backs up existing configs and sets a static IP with gateway/DNS parameters.
   * **`22) Configure Upstream DNS`**: Configures `systemd-resolved` upstream servers.
   * **`23) Enable NTP & Set Timezone`**: Sets timezone and activates system clock synchronization.
+  * **`24) Install VPN & Secure Tunnel (Tailscale / Cloudflare)`**: Installs Tailscale (VPN mesh network) or Cloudflare Tunnel (secure web ingress) either natively or via Docker containers (recommended).
 * **`[3] Memory & Storage`**:
   * **`31) Create Swap File & Optimize Swappiness`**: Recommends/allocates swap space and configures swappiness to `10` for enhanced memory management.
 * **`[4] Shell & CLI Replica`**:
