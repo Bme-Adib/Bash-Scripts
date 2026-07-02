@@ -39,6 +39,7 @@ Click any of the scripts below to jump directly to its description, installation
 * 🗄️ [Postgres 16, PostgREST & Adminer Setup (`setup_docker_postgres_postgrest.sh`)](#postgres-postgrest-setup)
 * 🔗 [Shlink URL Shortener & Web UI Setup (`setup_docker_shlink.sh`)](#shlink-setup)
 * 🐳 [Ubuntu Playground Container Setup (`setup_docker_ubuntu.sh`)](#ubuntu-setup)
+* 💰 [Actual Budget Server Installer (`setup_docker_actualbudget.sh`)](#actualbudget-setup)
 * 🐚 [Fish Shell & Starship Prompt Replicator (`setup_fish_starship.sh`)](#fish-setup)
 * 📊 [System Information & Real-Time Monitor (system_monitor.sh)](#system-monitor-setup)
 
@@ -445,6 +446,33 @@ chmod +x setup_docker_ubuntu.sh
 * **Docker Network**: Specify a docker network (defaults to `bridge`).
 * **Resource Limits**: Set CPU cores limit (e.g. `1.5`) and memory limits (e.g. `1g`, `512m`).
 * **Deploy Confirmation**: Reviews settings and builds/deploys the container using docker compose.
+
+---
+
+<a id="actualbudget-setup"></a>
+## 💰 Actual Budget Server Installer (`setup_docker_actualbudget.sh`)
+
+### Description
+An interactive installer script for deploying **Actual Budget** (a local-first personal finance app) via Docker and Docker Compose. It features automatic timezone detection, configurable port mappings, built-in HTTPS/SSL cert configurations, custom sync file size limits, and seamless integration with external Docker networks (such as proxy-net for Cloudflare Tunnels or Nginx Proxy Manager).
+
+### How to Use
+**One-Click Run (Recommended):**
+```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/Bme-Adib/Bash-Scripts/refs/heads/main/setup_docker_actualbudget.sh)"
+```
+**Alternative (Manual Download):**
+```bash
+chmod +x setup_docker_actualbudget.sh
+./setup_docker_actualbudget.sh
+```
+
+### Options & Inputs Inside the Script
+* **Installation Directory**: Choose the target folder to place `docker-compose.yml` and the persistent `actual-data` folder.
+* **Port Mapping**: Map a custom host port (defaults to `5006`) to the container.
+* **SSL/HTTPS**: Built-in support to specify private key and certificate paths to serve the app directly over HTTPS.
+* **Size Limits**: Customize sync and encrypted file upload limits (defaults to `20MB` and `50MB`).
+* **Docker Network**: Connect to a custom external network (e.g. `proxy-net`) for secure reverse proxies or Cloudflare Tunnels.
+* **Deploy Confirmation**: Reviews settings and deploys the Actual Budget container immediately.
 
 ---
 
