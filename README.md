@@ -54,6 +54,7 @@ Every script in this repository is interactive. It will ask you simple questions
 
 Click any script to jump directly to its explanation and copy-paste installer:
 
+* [👑 Ultimate Sovereign Server A-to-Z Setup (`ultimate_server_setup.sh`)](#ultimate-setup)
 * [🚀 All-in-One VPS & Laptop Server Config (`configure_new_server.sh`)](#server-config)
 * [🖥️ Ubuntu Server Initial Setup (`server_setup.sh`)](#server-setup)
 * [🐳 Docker Installer & Cleanup Manager (`manage_docker.sh`)](#docker-manager)
@@ -70,6 +71,26 @@ Click any script to jump directly to its explanation and copy-paste installer:
 * [🔗 Shlink URL Shortener (`setup_docker_shlink.sh`)](#shlink-setup)
 * [🐳 Ubuntu Sandbox Playground (`setup_docker_ubuntu.sh`)](#ubuntu-setup)
 * [🤖 Antigravity AI Workspace Setup (`setup_antigravity_project.sh`)](#antigravity-setup)
+
+---
+
+<a id="ultimate-setup"></a>
+## 👑 Ultimate Sovereign Server A-to-Z Setup (`ultimate_server_setup.sh`)
+
+### What it does
+A comprehensive, consolidated interactive setup wizard to configure a completely secure, containerized server environment from a fresh installation. This script combines package management, root and sudo user creation, hardened SSH profiles, UFW and Fail2Ban brute-force shielding, PC vs. Laptop tailored system settings, system swap files, modern interactive shells (Fish & Starship), Docker Engine with Compose plugins, and secure VPN meshes (Tailscale and Cloudflare Tunnels).
+
+### Copy-Paste Run
+```bash
+sudo bash -c "$(curl -sSL https://ghannamsacademy.com/scripts/ultimate_server_setup.sh)"
+```
+
+### Options inside:
+1. **Security Hardening**: Auto-creates sudo administrative accounts, updates root user passwords, enforces public SSH keys, customizes ports, and configures UFW/Fail2Ban brute-force jails.
+2. **Hardware Profile Optimizations**: Disables lid suspend, Wi-Fi sleep switches, and CPU governors for Laptops; configures Wake-on-LAN (WOL) for PCs.
+3. **Network Configuration**: Supports static network mappings (Netplan), global DNS settings, and automated clock syncing.
+4. **Interactive Development Shells**: Installs Fish shell, custom welcome art, active docker/git runtime HUDs (via Starship), auto-suggestions, syntax highlighting, and alias commands.
+5. **Services & VPN Tunnels**: Deploys Docker Engine, Docker Compose V2, and secures remote access via Tailscale VPN or Cloudflare Tunnels.
 
 ---
 
