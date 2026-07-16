@@ -5,5 +5,5 @@
 	logallrefupdates = true
 	worktree = /home/adib/3.ghannamsAcademyDomain/bashScripts
 [remote "origin"]
-	url = https://github.com/Bme-Adib/Bash-Scripts.git
+	url = git@github.com:Bme-Adib/Bash-Scripts.git
 	fetch = +refs/heads/*:refs/remotes/origin/*
